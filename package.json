@@ -1,0 +1,32 @@
+{
+  "name": "2048-3d-cube",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test --device='iPhone 12'",
+    "test:production": "node scripts/test-production.js",
+    "screenshots:prod": "playwright test --grep screenshot",
+    "deploy": "./scripts/deploy.sh",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.25.0"
+  },
+  "dependencies": {
+    "@types/hammerjs": "^2.0.46",
+    "@types/three": "^0.178.1",
+    "hammerjs": "^2.0.8",
+    "three": "^0.178.0"
+  }
+}

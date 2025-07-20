@@ -1,0 +1,5 @@
+name = "2048-3d-cube"
+compatibility_date = "2023-05-18"
+
+[site]
+bucket = "./dist"
