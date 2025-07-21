@@ -20,6 +20,16 @@ Also available at:
 - Win by reaching 2048 on ANY face
 - Game ends only when ALL faces have no valid moves
 
+### 🧠 NEW: Rotation-Aware Mode (Ultimate Challenge)
+
+We've implemented an **EXTREME DIFFICULTY** mode where:
+- After each cube rotation, the concept of "up", "down", "left", and "right" changes for each face
+- Each face interprets swipes based on the cube's current 3D orientation
+- What was "up" might now be "left" or "right" after rotation!
+- This creates 576 possible direction transformations to track mentally
+
+**Warning**: This mode is extraordinarily difficult and requires exceptional spatial reasoning skills!
+
 ## 🎯 How to Play
 
 1. **Swipe** in any direction (up, down, left, right)
@@ -180,9 +190,18 @@ MIT License - feel free to use this code for your own projects!
 
 ## 📊 Version History
 
+- **v2.2.0** - Added Rotation-Aware Mode (extreme difficulty)
 - **v2.1.0** - Revolutionary 6-games-in-one concept
 - **v2.0.0** - Complete rewrite with proper 3D mechanics
 - **v1.0.0** - Initial 3D implementation
+
+## 📚 Technical Documentation
+
+### Rotation-Aware Coordinate System
+See [docs/ROTATION_AWARE_COORDINATE_SYSTEM.md](docs/ROTATION_AWARE_COORDINATE_SYSTEM.md) for detailed explanation of the mathematical transformations and spatial reasoning challenges.
+
+### Implementation Plan
+See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the technical architecture and development roadmap.
 
 ---
 
