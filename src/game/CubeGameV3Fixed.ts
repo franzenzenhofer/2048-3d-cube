@@ -82,6 +82,7 @@ export class CubeGameV3Fixed {
     let anyFaceMoved = false;
     
     // Move tiles on ALL 6 faces simultaneously!
+    // All faces move in the SAME direction from the viewer's perspective
     Object.values(CubeFace).forEach(face => {
       const movements = this.moveTilesInFace(face as CubeFace, direction);
       if (movements.length > 0) {
