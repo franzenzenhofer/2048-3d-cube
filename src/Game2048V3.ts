@@ -19,6 +19,8 @@ export class Game2048V3 {
   private freeRotationPanStart: { x: number, y: number } | null = null;
   private currentZoom: number = 1;
   private initialPinchScale: number = 1;
+  private rotationMode: boolean = false;
+  private rotationModeIndicator: HTMLElement | null = null;
 
   constructor() {
     this.setupDOM();
@@ -58,7 +60,8 @@ export class Game2048V3 {
       (rotation) => this.handleRotate(rotation),
       () => this.handleRotateEnd(),
       (scale) => this.handlePinch(scale),
-      (deltaX, deltaY) => this.handlePan(deltaX, deltaY)
+      (deltaX, deltaY) => this.handlePan(deltaX, deltaY),
+      () => this.enterRotationMode()
     );
     
     this.updateVisuals(true);
@@ -67,6 +70,11 @@ export class Game2048V3 {
 
   private async handleMove(direction: SwipeDirection): Promise<void> {
     if (this.isAnimating || this.game.isGameOver()) return;
+    
+    // If in rotation mode, exit it
+    if (this.rotationMode) {
+      this.exitRotationMode();
+    }
     
     this.isAnimating = true;
     const previousScore = this.game.getScore();
@@ -164,7 +172,8 @@ export class Game2048V3 {
   }
 
   private handlePinch(scale: number): void {
-    if (!this.freeRotationActive) return;
+    // Pinch works in both modes
+    if (!this.freeRotationActive && !this.rotationMode) return;
     
     // Apply zoom based on pinch scale
     const newZoom = this.initialPinchScale * scale;
@@ -172,6 +181,70 @@ export class Game2048V3 {
     
     const cubeGroup = this.cube.getCubeGroup();
     cubeGroup.scale.setScalar(this.currentZoom);
+  }
+
+  private enterRotationMode(): void {
+    this.rotationMode = true;
+    this.controls.setRotationMode(true);
+    this.showRotationModeIndicator();
+    
+    // Start free rotation
+    this.handleRotateStart();
+  }
+
+  private exitRotationMode(): void {
+    this.rotationMode = false;
+    this.controls.setRotationMode(false);
+    this.hideRotationModeIndicator();
+    
+    // Snap back to forward face when exiting rotation mode
+    this.cube.snapToForwardFace(this.game);
+  }
+
+  private showRotationModeIndicator(): void {
+    if (!this.rotationModeIndicator) {
+      this.rotationModeIndicator = document.createElement('div');
+      this.rotationModeIndicator.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 255, 65, 0.1);
+        border: 2px solid #00FF41;
+        border-radius: 50%;
+        width: 150px;
+        height: 150px;
+        pointer-events: none;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Orbitron', monospace;
+        color: #00FF41;
+        font-size: 14px;
+        text-align: center;
+        animation: pulse 2s ease-in-out infinite;
+      `;
+      this.rotationModeIndicator.innerHTML = '<div>ROTATION<br>MODE</div>';
+      
+      // Add pulse animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(this.rotationModeIndicator);
+  }
+
+  private hideRotationModeIndicator(): void {
+    if (this.rotationModeIndicator && this.rotationModeIndicator.parentNode) {
+      this.rotationModeIndicator.parentNode.removeChild(this.rotationModeIndicator);
+    }
   }
 
   private restart(): void {
