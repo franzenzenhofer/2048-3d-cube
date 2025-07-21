@@ -43,24 +43,35 @@ describe('CubeGame', () => {
 
   describe('Movement', () => {
     it('should move tiles within a face', () => {
-      // Set up a simple scenario
-      const frontGrid = game.getFaceGrid(CubeFace.FRONT);
+      // Create a fresh game for this test
+      const testGame = new CubeGame();
+      const frontGrid = testGame.getFaceGrid(CubeFace.FRONT);
+      
       // Clear the grid first
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 4; c++) {
           frontGrid[r][c] = 0;
         }
       }
-      // Add test tiles
+      
+      // Add test tiles that will merge
       frontGrid[0][0] = 2;
       frontGrid[0][1] = 2;
       
-      const moved = game.move(SwipeDirection.LEFT);
+      const moved = testGame.move(SwipeDirection.LEFT);
       expect(moved).toBe(true);
       
-      const newGrid = game.getFaceGrid(CubeFace.FRONT);
+      const newGrid = testGame.getFaceGrid(CubeFace.FRONT);
       expect(newGrid[0][0]).toBe(4); // Merged
-      expect(newGrid[0][1]).toBe(0); // Empty
+      
+      // Check that a new random tile was added somewhere
+      let tileCount = 0;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (newGrid[r][c] > 0) tileCount++;
+        }
+      }
+      expect(tileCount).toBeGreaterThan(1); // Original merged tile + new random tile
     });
 
     it('should update score when tiles merge', () => {
@@ -140,19 +151,22 @@ describe('CubeGame', () => {
     });
 
     it('should detect game over when no moves possible', () => {
-      // Fill all unlocked faces with unmergeable tiles
-      game.getUnlockedFaces().forEach(face => {
-        const grid = game.getFaceGrid(face);
-        let value = 2;
+      // Create a fresh game for this test
+      const testGame = new CubeGame();
+      
+      // Fill all unlocked faces with a checkerboard pattern that can't merge
+      testGame.getUnlockedFaces().forEach(face => {
+        const grid = testGame.getFaceGrid(face);
         for (let r = 0; r < 4; r++) {
           for (let c = 0; c < 4; c++) {
-            grid[r][c] = value;
-            value = value === 2 ? 4 : 2;
+            // Create pattern: 2,4,8,16,32,64,128,256,512,1024...
+            const index = r * 4 + c;
+            grid[r][c] = Math.pow(2, (index % 10) + 1);
           }
         }
       });
       
-      expect(game.isGameOver()).toBe(true);
+      expect(testGame.isGameOver()).toBe(true);
     });
 
     it('should not be game over if empty cells exist', () => {
