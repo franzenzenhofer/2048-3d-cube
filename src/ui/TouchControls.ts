@@ -10,7 +10,9 @@ export class TouchControls {
   private onPinchCallback?: (scale: number) => void;
   private onPanCallback?: (deltaX: number, deltaY: number) => void;
   private onRotateEndCallback?: () => void;
+  private onLongPressCallback?: () => void;
   private isRotating: boolean = false;
+  private isInRotationMode: boolean = false;
 
   constructor(
     element: HTMLElement, 
@@ -20,7 +22,8 @@ export class TouchControls {
     onRotate?: (rotation: number) => void,
     onRotateEnd?: () => void,
     onPinch?: (scale: number) => void,
-    onPan?: (deltaX: number, deltaY: number) => void
+    onPan?: (deltaX: number, deltaY: number) => void,
+    onLongPress?: () => void
   ) {
     this.onSwipeCallback = onSwipe;
     this.onRestartCallback = onRestart;
@@ -29,29 +32,57 @@ export class TouchControls {
     this.onRotateEndCallback = onRotateEnd;
     this.onPinchCallback = onPinch;
     this.onPanCallback = onPan;
+    this.onLongPressCallback = onLongPress;
     this.hammer = new Hammer(element);
     this.setupGestures();
     this.setupKeyboard();
   }
 
+  public setRotationMode(enabled: boolean): void {
+    this.isInRotationMode = enabled;
+  }
+
   private setupGestures(): void {
-    // Configure swipe detection
+    // Configure recognizers using Hammer.js to the max!
+    
+    // 1. Long press to enter rotation mode
+    this.hammer.add(new Hammer.Press({
+      event: 'press',
+      time: 500, // 500ms hold
+      threshold: 10
+    }));
+    
+    // 2. Configure swipe with different behavior based on mode
     this.hammer.get('swipe').set({
       direction: Hammer.DIRECTION_ALL,
       threshold: 30,
       velocity: 0.3
     });
 
-    // Enable pinch and rotate gestures for two-finger rotation
+    // 3. Pinch for zoom (always enabled)
     this.hammer.get('pinch').set({ enable: true });
+    
+    // 4. Rotate gesture for two-finger rotation
     this.hammer.get('rotate').set({ enable: true });
     
-    // Add pan gesture for two-finger drag
+    // 5. Two-finger pan for free rotation
     this.hammer.add(new Hammer.Pan({ 
       event: 'twofingerpan',
       pointers: 2,
       threshold: 5
     }));
+    
+    // 6. Set up recognizer conflicts
+    // Long press should block tap
+    this.hammer.get('press').recognizeWith('tap');
+    
+    // Swipe should wait for press to fail
+    this.hammer.get('swipe').requireFailure('press');
+    
+    // Two-finger gestures should work together
+    this.hammer.get('pinch').recognizeWith(['rotate', 'twofingerpan']);
+    this.hammer.get('rotate').recognizeWith(['pinch', 'twofingerpan']);
+    this.hammer.get('twofingerpan').recognizeWith(['pinch', 'rotate']);
 
     // Single swipes for movement (only when not rotating)
     this.hammer.on('swipeleft', () => {
