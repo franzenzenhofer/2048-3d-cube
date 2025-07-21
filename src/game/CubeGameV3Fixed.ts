@@ -240,40 +240,41 @@ export class CubeGameV3Fixed {
   }
 
   private getOppositeFace(direction: SwipeDirection): CubeFace {
-    // Swipe direction determines which opposite face becomes active
+    // When you swipe, the cube rotates FROM that direction
+    // RIGHT swipe = rotate FROM left, so LEFT face comes forward
     switch (direction) {
       case SwipeDirection.LEFT:
-        return CubeFace.RIGHT;
+        return CubeFace.RIGHT;  // Rotate from right
       case SwipeDirection.RIGHT:
-        return CubeFace.LEFT;
+        return CubeFace.LEFT;   // Rotate from left
       case SwipeDirection.UP:
-        return CubeFace.BOTTOM;
+        return CubeFace.BOTTOM; // Rotate from bottom
       case SwipeDirection.DOWN:
-        return CubeFace.TOP;
+        return CubeFace.TOP;    // Rotate from top
     }
   }
 
   private getRotationForTransition(fromFace: CubeFace, toFace: CubeFace, direction: SwipeDirection): CubeRotation {
-    // Calculate rotation to bring the target face to front
+    // Rotation matches the swipe direction visually
     let axis: 'x' | 'y' = 'y';
     let angle = 0;
     
     switch (direction) {
       case SwipeDirection.LEFT:
         axis = 'y';
-        angle = -90; // Rotate right face to front
+        angle = 90;  // Rotate cube left (clockwise from top)
         break;
       case SwipeDirection.RIGHT:
         axis = 'y';
-        angle = 90; // Rotate left face to front
+        angle = -90; // Rotate cube right (counter-clockwise from top)
         break;
       case SwipeDirection.UP:
         axis = 'x';
-        angle = 90; // Rotate bottom face to front
+        angle = -90; // Rotate cube up
         break;
       case SwipeDirection.DOWN:
         axis = 'x';
-        angle = -90; // Rotate top face to front
+        angle = 90;  // Rotate cube down
         break;
     }
     
