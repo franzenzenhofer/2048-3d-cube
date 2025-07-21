@@ -186,24 +186,28 @@ export class TouchControls {
       }
     });
     
-    // Two-finger pan for X/Y rotation
+    // Two-finger pan - only for free rotation in rotation mode
     this.hammer.on('twofingerpanstart', () => {
-      this.isRotating = true;
-      if (this.onRotateStartCallback) {
-        this.onRotateStartCallback();
+      if (this.isInRotationMode) {
+        this.isRotating = true;
+        if (this.onRotateStartCallback) {
+          this.onRotateStartCallback();
+        }
       }
     });
     
     this.hammer.on('twofingerpanmove', (e) => {
-      if (this.onPanCallback) {
+      if (this.isInRotationMode && this.onPanCallback) {
         this.onPanCallback(e.deltaX, e.deltaY);
       }
     });
     
     this.hammer.on('twofingerpanend twofingerpancancel', () => {
-      this.isRotating = false;
-      if (this.onRotateEndCallback) {
-        this.onRotateEndCallback();
+      if (this.isInRotationMode) {
+        this.isRotating = false;
+        if (this.onRotateEndCallback) {
+          this.onRotateEndCallback();
+        }
       }
     });
 
