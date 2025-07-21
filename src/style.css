@@ -4,8 +4,9 @@
   --neon-green: #00FF41;
   --neon-cyan: #00FFFF;
   --neon-pink: #FF00FF;
-  --dark-bg: #000000;
-  --dark-surface: #0a0a0a;
+  --dark-bg: #0a0a0a;
+  --dark-surface: #1a1a1a;
+  --tile-bg: #2a2a2a;
 }
 
 * {

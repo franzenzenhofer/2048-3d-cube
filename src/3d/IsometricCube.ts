@@ -27,7 +27,7 @@ export class IsometricCube {
   ]);
 
   private readonly tileColors: Map<number, number> = new Map([
-    [0, 0x111111],
+    [0, 0x2a2a2a],
     [2, 0x00FF41],
     [4, 0x00FF7F],
     [8, 0x00FFAA],
@@ -62,11 +62,11 @@ export class IsometricCube {
       // Create face background
       const faceGeometry = new THREE.PlaneGeometry(3.8, 3.8);
       const faceMaterial = new THREE.MeshPhongMaterial({
-        color: 0x0a0a0a,
+        color: 0x1a1a1a,
         emissive: 0x00FF41,
-        emissiveIntensity: 0.02,
+        emissiveIntensity: 0.05,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.9,
         side: THREE.DoubleSide
       });
       const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);

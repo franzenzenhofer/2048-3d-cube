@@ -9,7 +9,7 @@ export class OptimizedScene {
   constructor(container: HTMLElement) {
     this.container = container;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x000000);
+    this.scene.background = new THREE.Color(0x0a0a0a);
     
     // Calculate camera FOV based on viewport
     const aspect = container.clientWidth / container.clientHeight;

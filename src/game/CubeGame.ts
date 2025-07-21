@@ -162,109 +162,150 @@ export class CubeGame {
     const grid = this.faces.get(face)!;
     const movements: TileMovement[] = [];
     const newGrid = this.createEmptyGrid();
+    let changed = false;
     
-    // Determine movement vectors based on direction
-    const vectors = this.getMovementVectors(direction);
-    
-    // Process each line in movement direction
-    for (let line = 0; line < 4; line++) {
-      const tiles: Array<{value: number, pos: [number, number]}> = [];
-      
-      // Collect tiles in the line
-      for (let i = 0; i < 4; i++) {
-        const [r, c] = this.getPositionInLine(line, i, direction);
-        if (grid[r][c] !== 0) {
-          tiles.push({value: grid[r][c], pos: [r, c]});
+    // Process based on direction
+    if (direction === SwipeDirection.LEFT || direction === SwipeDirection.RIGHT) {
+      // Process rows
+      for (let row = 0; row < 4; row++) {
+        const tiles: number[] = [];
+        const positions: [number, number][] = [];
+        
+        // Collect non-zero tiles
+        for (let col = 0; col < 4; col++) {
+          if (grid[row][col] !== 0) {
+            tiles.push(grid[row][col]);
+            positions.push([row, col]);
+          }
+        }
+        
+        if (tiles.length === 0) continue;
+        
+        // Process line (merge and compact)
+        const processed = this.processLine(tiles, direction === SwipeDirection.LEFT);
+        
+        // Place tiles back
+        if (direction === SwipeDirection.LEFT) {
+          for (let i = 0; i < processed.length; i++) {
+            newGrid[row][i] = processed[i].value;
+            if (positions[processed[i].originalIndex] && 
+                (positions[processed[i].originalIndex][1] !== i || processed[i].merged)) {
+              changed = true;
+              movements.push({
+                fromFace: face,
+                toFace: face,
+                fromPos: positions[processed[i].originalIndex],
+                toPos: [row, i],
+                value: processed[i].value,
+                merged: processed[i].merged
+              });
+            }
+          }
+        } else { // RIGHT
+          for (let i = 0; i < processed.length; i++) {
+            const col = 3 - i;
+            newGrid[row][col] = processed[i].value;
+            if (positions[processed[i].originalIndex] && 
+                (positions[processed[i].originalIndex][1] !== col || processed[i].merged)) {
+              changed = true;
+              movements.push({
+                fromFace: face,
+                toFace: face,
+                fromPos: positions[processed[i].originalIndex],
+                toPos: [row, col],
+                value: processed[i].value,
+                merged: processed[i].merged
+              });
+            }
+          }
         }
       }
-      
-      // Process merges and movements
-      const processed = this.processTileLine(tiles);
-      
-      // Place tiles in new positions
-      processed.forEach((tile, idx) => {
-        const [newR, newC] = this.getPositionInLine(line, idx, direction);
+    } else { // UP or DOWN
+      // Process columns
+      for (let col = 0; col < 4; col++) {
+        const tiles: number[] = [];
+        const positions: [number, number][] = [];
         
-        if (idx < 4) {
-          // Tile stays on same face
-          newGrid[newR][newC] = tile.value;
-          if (tile.pos[0] !== newR || tile.pos[1] !== newC) {
-            movements.push({
-              fromFace: face,
-              toFace: face,
-              fromPos: tile.pos,
-              toPos: [newR, newC],
-              value: tile.value,
-              merged: tile.merged || false
-            });
-          }
-        } else {
-          // Tile moves to adjacent face
-          const transition = this.findTransition(face, direction, line);
-          if (transition && this.unlockedFaces.has(transition.to)) {
-            const [transR, transC] = transition.transform(line, idx - 4);
-            const targetGrid = this.faces.get(transition.to)!;
-            targetGrid[transR][transC] = tile.value;
-            
-            movements.push({
-              fromFace: face,
-              toFace: transition.to,
-              fromPos: tile.pos,
-              toPos: [transR, transC],
-              value: tile.value,
-              merged: false
-            });
+        // Collect non-zero tiles
+        for (let row = 0; row < 4; row++) {
+          if (grid[row][col] !== 0) {
+            tiles.push(grid[row][col]);
+            positions.push([row, col]);
           }
         }
-      });
+        
+        if (tiles.length === 0) continue;
+        
+        // Process line (merge and compact)
+        const processed = this.processLine(tiles, direction === SwipeDirection.UP);
+        
+        // Place tiles back
+        if (direction === SwipeDirection.UP) {
+          for (let i = 0; i < processed.length; i++) {
+            newGrid[i][col] = processed[i].value;
+            if (positions[processed[i].originalIndex] && 
+                (positions[processed[i].originalIndex][0] !== i || processed[i].merged)) {
+              changed = true;
+              movements.push({
+                fromFace: face,
+                toFace: face,
+                fromPos: positions[processed[i].originalIndex],
+                toPos: [i, col],
+                value: processed[i].value,
+                merged: processed[i].merged
+              });
+            }
+          }
+        } else { // DOWN
+          for (let i = 0; i < processed.length; i++) {
+            const row = 3 - i;
+            newGrid[row][col] = processed[i].value;
+            if (positions[processed[i].originalIndex] && 
+                (positions[processed[i].originalIndex][0] !== row || processed[i].merged)) {
+              changed = true;
+              movements.push({
+                fromFace: face,
+                toFace: face,
+                fromPos: positions[processed[i].originalIndex],
+                toPos: [row, col],
+                value: processed[i].value,
+                merged: processed[i].merged
+              });
+            }
+          }
+        }
+      }
     }
     
-    // Update face grid
-    this.faces.set(face, newGrid);
+    // Only update if something changed
+    if (changed || movements.length > 0) {
+      this.faces.set(face, newGrid);
+    }
+    
     return movements;
   }
 
-  private getMovementVectors(direction: SwipeDirection): {dr: number, dc: number} {
-    switch (direction) {
-      case SwipeDirection.LEFT: return {dr: 0, dc: -1};
-      case SwipeDirection.RIGHT: return {dr: 0, dc: 1};
-      case SwipeDirection.UP: return {dr: -1, dc: 0};
-      case SwipeDirection.DOWN: return {dr: 1, dc: 0};
-    }
-  }
-
-  private getPositionInLine(line: number, index: number, direction: SwipeDirection): [number, number] {
-    switch (direction) {
-      case SwipeDirection.LEFT:
-      case SwipeDirection.RIGHT:
-        return [line, index];
-      case SwipeDirection.UP:
-      case SwipeDirection.DOWN:
-        return [index, line];
-    }
-  }
-
-  private processTileLine(tiles: Array<{value: number, pos: [number, number]}>): 
-    Array<{value: number, pos: [number, number], merged?: boolean}> {
-    const result: Array<{value: number, pos: [number, number], merged?: boolean}> = [];
+  private processLine(tiles: number[], toStart: boolean): Array<{value: number, merged: boolean, originalIndex: number}> {
+    const result: Array<{value: number, merged: boolean, originalIndex: number}> = [];
+    const processed: Array<{value: number, merged: boolean, originalIndex: number}> = [];
     
-    for (let i = 0; i < tiles.length; i++) {
-      if (i < tiles.length - 1 && tiles[i].value === tiles[i + 1].value) {
-        const mergedValue = tiles[i].value * 2;
-        result.push({
-          value: mergedValue,
-          pos: tiles[i].pos,
-          merged: true
-        });
+    // First pass: merge adjacent equal tiles
+    let i = 0;
+    while (i < tiles.length) {
+      if (i < tiles.length - 1 && tiles[i] === tiles[i + 1]) {
+        const mergedValue = tiles[i] * 2;
+        processed.push({value: mergedValue, merged: true, originalIndex: i});
         this.score += mergedValue;
-        i++; // Skip next tile
+        i += 2;
       } else {
-        result.push(tiles[i]);
+        processed.push({value: tiles[i], merged: false, originalIndex: i});
+        i++;
       }
     }
     
-    return result;
+    return processed;
   }
+
 
   private findTransition(face: CubeFace, direction: SwipeDirection, line: number): FaceTransition | null {
     const edge = this.getEdgeFromDirection(direction);
@@ -310,7 +351,13 @@ export class CubeGame {
   }
 
   public getFaceGrid(face: CubeFace): number[][] {
-    return this.faces.get(face) || this.createEmptyGrid();
+    const grid = this.faces.get(face);
+    if (!grid) {
+      const newGrid = this.createEmptyGrid();
+      this.faces.set(face, newGrid);
+      return newGrid;
+    }
+    return grid;
   }
 
   public getScore(): number {
@@ -326,9 +373,9 @@ export class CubeGame {
   }
 
   public isGameOver(): boolean {
-    // Check if any moves are possible
+    // Check if any moves are possible on any unlocked face
     for (const face of this.unlockedFaces) {
-      const grid = this.faces.get(face)!;
+      const grid = this.getFaceGrid(face);
       
       // Check for empty cells
       for (let r = 0; r < 4; r++) {
