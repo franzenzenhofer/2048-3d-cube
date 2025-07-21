@@ -1,11 +1,11 @@
-import { CubeGameV3, SwipeDirection, CubeFace } from './game/CubeGameV3';
+import { CubeGameV3Fixed, SwipeDirection, CubeFace } from './game/CubeGameV3Fixed';
 import { EnhancedScene } from './3d/EnhancedScene';
 import { AnimatedCube } from './3d/AnimatedCube';
 import { TouchControls } from './ui/TouchControls';
 import { MinimalUI } from './ui/MinimalUI';
 
 export class Game2048V3 {
-  private game: CubeGameV3;
+  private game: CubeGameV3Fixed;
   private scene: EnhancedScene;
   private cube: AnimatedCube;
   private controls: TouchControls;
@@ -41,7 +41,7 @@ export class Game2048V3 {
   }
 
   private initializeGame(): void {
-    this.game = new CubeGameV3();
+    this.game = new CubeGameV3Fixed();
     this.scene = new EnhancedScene(this.container);
     this.cube = new AnimatedCube(this.scene.scene);
     this.controls = new TouchControls(

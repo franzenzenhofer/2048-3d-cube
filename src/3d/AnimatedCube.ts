@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CubeGameV3, CubeFace, TileMovement, CubeRotation } from '../game/CubeGameV3';
+import { CubeGameV3Fixed, CubeFace, TileMovement, CubeRotation } from '../game/CubeGameV3Fixed';
 
 export class AnimatedCube {
   private scene: THREE.Scene;
@@ -124,7 +124,7 @@ export class AnimatedCube {
     });
   }
 
-  public updateFromGame(game: CubeGameV3, skipAnimation: boolean = false): void {
+  public updateFromGame(game: CubeGameV3Fixed, skipAnimation: boolean = false): void {
     // Clear existing tiles
     this.tileGroups.forEach((tiles, face) => {
       tiles.forEach(row => {
