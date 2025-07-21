@@ -29,13 +29,17 @@ export interface CubeRotation {
   targetFace: CubeFace;
 }
 
+import { CubeCoordinateSystem } from './CubeCoordinateSystem';
+
 export class CubeGameV3Fixed {
   private faces: Map<CubeFace, number[][]> = new Map();
   private score: number = 0;
   private moveHistory: TileMovement[] = [];
   private activeFace: CubeFace = CubeFace.FRONT;
+  private coordinateSystem: CubeCoordinateSystem;
   
   constructor() {
+    this.coordinateSystem = new CubeCoordinateSystem();
     this.initializeFaces();
     this.addInitialTiles();
   }
@@ -58,7 +62,7 @@ export class CubeGameV3Fixed {
     });
   }
 
-  private addRandomTilesToFace(face: CubeFace, count: number): void {
+  private addRandomTilesToFace(face: CubeFace, count: number): boolean {
     const grid = this.faces.get(face)!;
     const availablePositions: Array<{row: number, col: number}> = [];
     
@@ -69,12 +73,23 @@ export class CubeGameV3Fixed {
         }
       }
     }
+    
+    if (availablePositions.length === 0) {
+      console.warn(`No available positions on ${face} face!`);
+      return false;
+    }
 
+    let tilesAdded = 0;
     for (let i = 0; i < Math.min(count, availablePositions.length); i++) {
       const idx = Math.floor(Math.random() * availablePositions.length);
       const pos = availablePositions.splice(idx, 1)[0];
-      grid[pos.row][pos.col] = Math.random() < 0.9 ? 2 : 4;
+      const value = Math.random() < 0.9 ? 2 : 4;
+      grid[pos.row][pos.col] = value;
+      tilesAdded++;
+      console.log(`Added tile ${value} to ${face} at [${pos.row},${pos.col}]`);
     }
+    
+    return tilesAdded > 0;
   }
 
   public move(direction: SwipeDirection): { moved: boolean; rotation?: CubeRotation } {
@@ -82,16 +97,22 @@ export class CubeGameV3Fixed {
     let anyFaceMoved = false;
     
     // Move tiles on ALL 6 faces simultaneously!
-    // All faces move in the SAME direction from the viewer's perspective
+    // Each face interprets the direction based on its orientation
+    const facesWithMovement: CubeFace[] = [];
+    
     Object.values(CubeFace).forEach(face => {
-      const movements = this.moveTilesInFace(face as CubeFace, direction);
+      const typedFace = face as CubeFace;
+      const localDirection = this.coordinateSystem.getLocalDirection(typedFace, direction);
+      const movements = this.moveTilesInFace(typedFace, localDirection);
+      
       if (movements.length > 0) {
         anyFaceMoved = true;
+        facesWithMovement.push(typedFace);
         // Add face info to movements for animation
         movements.forEach(m => {
           this.moveHistory.push({
             ...m,
-            face: face as CubeFace
+            face: typedFace
           });
         });
       }
@@ -99,7 +120,12 @@ export class CubeGameV3Fixed {
     
     if (anyFaceMoved) {
       // Add new tile ONLY to the active face after move
-      this.addRandomTilesToFace(this.activeFace, 1);
+      const tileAdded = this.addRandomTilesToFace(this.activeFace, 1);
+      
+      // Validate tile was actually added
+      if (!tileAdded) {
+        console.warn(`Failed to add tile to ${this.activeFace} face - might be full!`);
+      }
       
       // Determine which face becomes active based on swipe direction
       const newActiveFace = this.getOppositeFace(direction);
@@ -107,6 +133,9 @@ export class CubeGameV3Fixed {
       
       // Update active face
       this.activeFace = newActiveFace;
+      
+      // Log state for debugging
+      console.log(`Move ${direction}: ${facesWithMovement.length} faces moved, new active: ${newActiveFace}`);
       
       return { moved: true, rotation };
     }
@@ -378,5 +407,40 @@ export class CubeGameV3Fixed {
   public setTileForTesting(face: CubeFace, row: number, col: number, value: number): void {
     const grid = this.faces.get(face)!;
     grid[row][col] = value;
+  }
+  
+  // Validation methods
+  public validateGameState(): boolean {
+    let isValid = true;
+    
+    // Check each face has a valid grid
+    for (const [face, grid] of this.faces) {
+      if (!grid || grid.length !== 4 || grid[0].length !== 4) {
+        console.error(`Invalid grid structure for ${face}`);
+        isValid = false;
+      }
+      
+      // Count tiles
+      let tileCount = 0;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (grid[r][c] > 0) tileCount++;
+        }
+      }
+      
+      console.log(`${face}: ${tileCount} tiles`);
+    }
+    
+    return isValid;
+  }
+  
+  public canAnyFaceMove(direction: SwipeDirection): boolean {
+    for (const face of Object.values(CubeFace)) {
+      const grid = this.faces.get(face as CubeFace)!;
+      if (this.coordinateSystem.canFaceMove(face as CubeFace, grid, direction)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
