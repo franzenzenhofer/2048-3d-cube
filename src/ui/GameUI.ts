@@ -19,6 +19,7 @@ export class GameUI {
           <div class="score-label">SCORE</div>
           <div class="score-value" id="score">0</div>
         </div>
+        <div class="version">v${(window as any).__APP_VERSION__ || '1.0.0'}</div>
       </div>
       <div class="game-controls">
         <div class="control-hint">
