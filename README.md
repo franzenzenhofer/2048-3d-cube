@@ -47,6 +47,11 @@ We've implemented an **EXTREME DIFFICULTY** mode where:
 - **Restart**: Double tap or press R
 - **Two-Finger Rotation**: Full 360° cube inspection (mobile/trackpad)
 - **Pinch-to-Zoom**: Zoom in/out to see details (0.5x - 2x scale)
+- **Rotation Mode**: Long press (0.5s) to enter rotation mode
+  - Visual indicator shows when active
+  - Two-finger pan for full 360° rotation on all axes
+  - Swipe to exit mode and make your move
+  - Perfect for inspecting all sides before deciding
 
 ## 🎨 Features
 
@@ -195,6 +200,13 @@ MIT License - feel free to use this code for your own projects!
 
 ## 📊 Version History
 
+- **v2.2.23** - 🎮 **ROTATION MODE SYSTEM!**
+  - Added long-press (0.5s) to enter rotation mode
+  - Visual indicator shows when rotation mode is active
+  - Two-finger pan for full 360° rotation on all axes in rotation mode
+  - Swipe to exit rotation mode and make your move
+  - Perfect for strategic planning - inspect all sides before deciding
+  - Comprehensive test coverage with TDD approach
 - **v2.2.20** - 🎉 **COMPLETE & FULLY FUNCTIONAL!** 
   - Added full 360° cube inspection with two-finger rotation
   - Implemented pinch-to-zoom (0.5x - 2x scale)
