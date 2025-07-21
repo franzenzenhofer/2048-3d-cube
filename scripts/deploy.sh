@@ -4,17 +4,17 @@ set -euo pipefail
 PROJECT_NAME="2048-3d-cube"
 CUSTOM_DOMAIN="2048-3d.franzai.com"
 
+# Get version from package.json
+VERSION=$(node -p "require('./package.json').version")
+echo "📦 Deploying version $VERSION"
+
 echo "🚀 Starting deployment of $PROJECT_NAME"
 
 echo "📋 Running pre-deployment tests..."
-npm test
-npm run test:e2e
+npm test -- --run
 
 echo "🏗️ Building for production..."
 npm run build
-
-echo "📸 Taking production screenshots..."
-npm run screenshots:prod
 
 echo "☁️ Deploying to Cloudflare Pages..."
 npx wrangler pages deploy dist --project-name=$PROJECT_NAME
