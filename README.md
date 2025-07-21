@@ -42,6 +42,7 @@ We've implemented an **EXTREME DIFFICULTY** mode where:
 - **Mobile**: Swipe gestures
 - **Desktop**: Arrow keys or WASD
 - **Restart**: Double tap or press R
+- **Two-Finger Rotation**: Rotate to inspect the cube (mobile/trackpad)
 
 ## 🎨 Features
 
@@ -190,6 +191,11 @@ MIT License - feel free to use this code for your own projects!
 
 ## 📊 Version History
 
+- **v2.2.19** - 🎉 **FULLY WORKING!** Fixed all tile animations and movement rules
+  - Tiles now correctly slide without jumping over others
+  - Only merged tiles show pulse effect
+  - Proper 2048 rules implementation
+  - Smooth animations throughout
 - **v2.2.0** - Added Rotation-Aware Mode (extreme difficulty)
 - **v2.1.0** - Revolutionary 6-games-in-one concept
 - **v2.0.0** - Complete rewrite with proper 3D mechanics

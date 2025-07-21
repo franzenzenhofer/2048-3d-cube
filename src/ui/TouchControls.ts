@@ -7,6 +7,8 @@ export class TouchControls {
   private onRestartCallback: () => void;
   private onRotateStartCallback?: () => void;
   private onRotateCallback?: (rotation: number) => void;
+  private onPinchCallback?: (scale: number) => void;
+  private onPanCallback?: (deltaX: number, deltaY: number) => void;
   private onRotateEndCallback?: () => void;
   private isRotating: boolean = false;
 
@@ -16,13 +18,17 @@ export class TouchControls {
     onRestart: () => void,
     onRotateStart?: () => void,
     onRotate?: (rotation: number) => void,
-    onRotateEnd?: () => void
+    onRotateEnd?: () => void,
+    onPinch?: (scale: number) => void,
+    onPan?: (deltaX: number, deltaY: number) => void
   ) {
     this.onSwipeCallback = onSwipe;
     this.onRestartCallback = onRestart;
     this.onRotateStartCallback = onRotateStart;
     this.onRotateCallback = onRotate;
     this.onRotateEndCallback = onRotateEnd;
+    this.onPinchCallback = onPinch;
+    this.onPanCallback = onPan;
     this.hammer = new Hammer(element);
     this.setupGestures();
     this.setupKeyboard();
@@ -39,6 +45,13 @@ export class TouchControls {
     // Enable pinch and rotate gestures for two-finger rotation
     this.hammer.get('pinch').set({ enable: true });
     this.hammer.get('rotate').set({ enable: true });
+    
+    // Add pan gesture for two-finger drag
+    this.hammer.add(new Hammer.Pan({ 
+      event: 'twofingerpan',
+      pointers: 2,
+      threshold: 5
+    }));
 
     // Single swipes for movement (only when not rotating)
     this.hammer.on('swipeleft', () => {
@@ -99,6 +112,10 @@ export class TouchControls {
     });
 
     this.hammer.on('pinchmove', (e) => {
+      if (this.onPinchCallback) {
+        // Send pinch scale for zooming
+        this.onPinchCallback(e.scale);
+      }
       if (this.onRotateCallback) {
         // Convert pinch rotation to degrees
         this.onRotateCallback(e.rotation);
@@ -106,6 +123,27 @@ export class TouchControls {
     });
 
     this.hammer.on('pinchend pinchcancel', () => {
+      this.isRotating = false;
+      if (this.onRotateEndCallback) {
+        this.onRotateEndCallback();
+      }
+    });
+    
+    // Two-finger pan for X/Y rotation
+    this.hammer.on('twofingerpanstart', () => {
+      this.isRotating = true;
+      if (this.onRotateStartCallback) {
+        this.onRotateStartCallback();
+      }
+    });
+    
+    this.hammer.on('twofingerpanmove', (e) => {
+      if (this.onPanCallback) {
+        this.onPanCallback(e.deltaX, e.deltaY);
+      }
+    });
+    
+    this.hammer.on('twofingerpanend twofingerpancancel', () => {
       this.isRotating = false;
       if (this.onRotateEndCallback) {
         this.onRotateEndCallback();

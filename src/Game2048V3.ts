@@ -16,6 +16,9 @@ export class Game2048V3 {
   private gameStarted: boolean = false;
   private freeRotationStartRotation: { x: number; y: number } | null = null;
   private freeRotationActive: boolean = false;
+  private freeRotationPanStart: { x: number, y: number } | null = null;
+  private currentZoom: number = 1;
+  private initialPinchScale: number = 1;
 
   constructor() {
     this.setupDOM();
@@ -53,7 +56,9 @@ export class Game2048V3 {
       () => this.restart(),
       () => this.handleRotateStart(),
       (rotation) => this.handleRotate(rotation),
-      () => this.handleRotateEnd()
+      () => this.handleRotateEnd(),
+      (scale) => this.handlePinch(scale),
+      (deltaX, deltaY) => this.handlePan(deltaX, deltaY)
     );
     
     this.updateVisuals(true);
@@ -123,6 +128,8 @@ export class Game2048V3 {
         x: cubeGroup.rotation.x,
         y: cubeGroup.rotation.y
       };
+      this.freeRotationPanStart = null;
+      this.initialPinchScale = this.currentZoom;
     }
   }
 
@@ -137,9 +144,34 @@ export class Game2048V3 {
   private handleRotateEnd(): void {
     if (this.freeRotationActive) {
       this.freeRotationActive = false;
-      // Snap back to forward face
-      this.cube.snapToForwardFace(this.game);
+      // Don't snap back - allow free inspection!
+      // this.cube.snapToForwardFace(this.game);
     }
+  }
+
+  private handlePan(deltaX: number, deltaY: number): void {
+    if (!this.freeRotationActive || !this.freeRotationStartRotation) return;
+    
+    const cubeGroup = this.cube.getCubeGroup();
+    const sensitivity = 0.005; // Adjust for comfortable rotation speed
+    
+    // Rotate based on drag distance
+    cubeGroup.rotation.y = this.freeRotationStartRotation.y - (deltaX * sensitivity);
+    cubeGroup.rotation.x = this.freeRotationStartRotation.x - (deltaY * sensitivity);
+    
+    // Clamp X rotation to prevent flipping
+    cubeGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cubeGroup.rotation.x));
+  }
+
+  private handlePinch(scale: number): void {
+    if (!this.freeRotationActive) return;
+    
+    // Apply zoom based on pinch scale
+    const newZoom = this.initialPinchScale * scale;
+    this.currentZoom = Math.max(0.5, Math.min(2, newZoom)); // Clamp between 0.5x and 2x
+    
+    const cubeGroup = this.cube.getCubeGroup();
+    cubeGroup.scale.setScalar(this.currentZoom);
   }
 
   private restart(): void {
