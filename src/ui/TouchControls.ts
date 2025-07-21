@@ -84,30 +84,56 @@ export class TouchControls {
     this.hammer.get('rotate').recognizeWith(['pinch', 'twofingerpan']);
     this.hammer.get('twofingerpan').recognizeWith(['pinch', 'rotate']);
 
-    // Single swipes for movement (only when not rotating)
+    // Long press to enter rotation mode
+    this.hammer.on('press', () => {
+      if (!this.isInRotationMode && this.onLongPressCallback) {
+        this.haptic(50); // Strong haptic for mode change
+        this.onLongPressCallback();
+      }
+    });
+
+    // Single swipes - different behavior based on mode
     this.hammer.on('swipeleft', () => {
-      if (!this.isRotating) {
+      if (this.isInRotationMode) {
+        // In rotation mode, swipe exits mode and performs move
+        this.setRotationMode(false);
+        this.onSwipeCallback(SwipeDirection.LEFT);
+        this.haptic(30);
+      } else if (!this.isRotating) {
+        // Normal mode swipe
         this.onSwipeCallback(SwipeDirection.LEFT);
         this.haptic();
       }
     });
 
     this.hammer.on('swiperight', () => {
-      if (!this.isRotating) {
+      if (this.isInRotationMode) {
+        this.setRotationMode(false);
+        this.onSwipeCallback(SwipeDirection.RIGHT);
+        this.haptic(30);
+      } else if (!this.isRotating) {
         this.onSwipeCallback(SwipeDirection.RIGHT);
         this.haptic();
       }
     });
 
     this.hammer.on('swipeup', () => {
-      if (!this.isRotating) {
+      if (this.isInRotationMode) {
+        this.setRotationMode(false);
+        this.onSwipeCallback(SwipeDirection.UP);
+        this.haptic(30);
+      } else if (!this.isRotating) {
         this.onSwipeCallback(SwipeDirection.UP);
         this.haptic();
       }
     });
 
     this.hammer.on('swipedown', () => {
-      if (!this.isRotating) {
+      if (this.isInRotationMode) {
+        this.setRotationMode(false);
+        this.onSwipeCallback(SwipeDirection.DOWN);
+        this.haptic(30);
+      } else if (!this.isRotating) {
         this.onSwipeCallback(SwipeDirection.DOWN);
         this.haptic();
       }
