@@ -126,8 +126,12 @@ canvas {
   position: absolute;
   bottom: 1rem;
   right: 1rem;
-  font-size: 0.7rem;
-  opacity: 0.3;
+  font-size: 1rem;
+  color: var(--neon-green);
+  opacity: 0.8;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--neon-green);
 }
 
 /* Game Screen */

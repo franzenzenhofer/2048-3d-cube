@@ -74,13 +74,66 @@ git commit -m "chore: bump version to $NEW_VERSION
 [skip ci]" || true
 
 echo -e "${BLUE}☁️  Deploying to Cloudflare Pages...${NC}"
-npx wrangler pages deploy dist --project-name=$PROJECT_NAME
+DEPLOY_OUTPUT=$(npx wrangler pages deploy dist --project-name=$PROJECT_NAME 2>&1)
+echo "$DEPLOY_OUTPUT"
 
-echo -e "${GREEN}✅ Deployment complete!${NC}"
-echo -e "${BLUE}🌐 URLs:${NC}"
-echo "  - https://$PROJECT_NAME.pages.dev"
-echo "  - https://$CUSTOM_DOMAIN"
-echo -e "${YELLOW}📦 Version $NEW_VERSION deployed successfully!${NC}"
+# Extract deployment URL from output
+DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -oP 'https://[a-z0-9]+\.'$PROJECT_NAME'\.pages\.dev' | head -1)
+
+echo -e "${BLUE}🔍 Verifying deployment...${NC}"
+
+# Function to check if a URL returns the correct version
+check_url() {
+  local url=$1
+  local max_retries=12
+  local retry_count=0
+  
+  echo -e "${YELLOW}Checking $url...${NC}"
+  
+  while [ $retry_count -lt $max_retries ]; do
+    # Fetch the page and look for the version string
+    RESPONSE=$(curl -s "$url" | grep -o "v$NEW_VERSION" || true)
+    
+    if [ ! -z "$RESPONSE" ]; then
+      echo -e "${GREEN}✓ Version $NEW_VERSION confirmed at $url${NC}"
+      return 0
+    fi
+    
+    retry_count=$((retry_count + 1))
+    echo -e "${YELLOW}  Attempt $retry_count/$max_retries - Version not yet available, waiting 5s...${NC}"
+    sleep 5
+  done
+  
+  echo -e "${RED}✗ Failed to verify version at $url after $max_retries attempts${NC}"
+  return 1
+}
+
+# Check all URLs
+VERIFICATION_FAILED=false
+
+# Check deployment URL
+if [ ! -z "$DEPLOY_URL" ]; then
+  check_url "$DEPLOY_URL" || VERIFICATION_FAILED=true
+fi
+
+# Check main pages.dev URL
+check_url "https://$PROJECT_NAME.pages.dev" || VERIFICATION_FAILED=true
+
+# Check custom domain
+check_url "https://$CUSTOM_DOMAIN" || VERIFICATION_FAILED=true
+
+if [ "$VERIFICATION_FAILED" = true ]; then
+  echo -e "${RED}⚠️  Warning: Could not verify deployment on all URLs${NC}"
+  echo -e "${YELLOW}The deployment may still be propagating. Please check manually in a few minutes.${NC}"
+else
+  echo -e "${GREEN}✅ Deployment verified on all URLs!${NC}"
+fi
+
+echo -e "${BLUE}🌐 Live URLs:${NC}"
+echo "  - Deployment: ${DEPLOY_URL:-N/A}"
+echo "  - Pages.dev: https://$PROJECT_NAME.pages.dev"
+echo "  - Custom: https://$CUSTOM_DOMAIN"
+echo -e "${YELLOW}📦 Version $NEW_VERSION deployed!${NC}"
 
 # Push to GitHub
 echo -e "${BLUE}📤 Pushing to GitHub...${NC}"
