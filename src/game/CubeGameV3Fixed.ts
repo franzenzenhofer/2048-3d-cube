@@ -19,6 +19,7 @@ export interface TileMovement {
   toPos: [number, number];
   value: number;
   merged: boolean;
+  face?: CubeFace;
 }
 
 export interface CubeRotation {
@@ -78,14 +79,25 @@ export class CubeGameV3Fixed {
 
   public move(direction: SwipeDirection): { moved: boolean; rotation?: CubeRotation } {
     this.moveHistory = [];
+    let anyFaceMoved = false;
     
-    // ONLY move tiles on the ACTIVE face (6 independent boards concept)
-    const movements = this.moveTilesInFace(this.activeFace, direction);
+    // Move tiles on ALL 6 faces simultaneously!
+    Object.values(CubeFace).forEach(face => {
+      const movements = this.moveTilesInFace(face as CubeFace, direction);
+      if (movements.length > 0) {
+        anyFaceMoved = true;
+        // Add face info to movements for animation
+        movements.forEach(m => {
+          this.moveHistory.push({
+            ...m,
+            face: face as CubeFace
+          });
+        });
+      }
+    });
     
-    if (movements.length > 0) {
-      this.moveHistory = movements;
-      
-      // Add new tile to the active face after move
+    if (anyFaceMoved) {
+      // Add new tile ONLY to the active face after move
       this.addRandomTilesToFace(this.activeFace, 1);
       
       // Determine which face becomes active based on swipe direction

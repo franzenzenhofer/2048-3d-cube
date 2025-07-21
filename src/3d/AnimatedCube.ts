@@ -256,11 +256,11 @@ export class AnimatedCube {
   }
 
   public async animateMovements(movements: TileMovement[], activeFace: CubeFace): Promise<void> {
-    // All movements happen on the active face only
-    await this.animateMovementGroup(movements, activeFace);
+    // Movements happen on ALL faces simultaneously
+    await this.animateMovementGroup(movements);
   }
 
-  private animateMovementGroup(movements: TileMovement[], activeFace: CubeFace): Promise<void> {
+  private animateMovementGroup(movements: TileMovement[]): Promise<void> {
     return new Promise(resolve => {
       const duration = 300;
       const startTime = Date.now();
@@ -274,10 +274,10 @@ export class AnimatedCube {
         toScale: number
       }> = [];
       
-      // Get tiles from the active face only
-      const tiles = this.tileGroups.get(activeFace)!;
-      
       movements.forEach(move => {
+        // Get tiles from the face specified in the movement
+        const face = move.face || CubeFace.FRONT;
+        const tiles = this.tileGroups.get(face)!;
         const fromTile = tiles[move.fromPos[0]][move.fromPos[1]];
         const toTile = tiles[move.toPos[0]][move.toPos[1]];
         
