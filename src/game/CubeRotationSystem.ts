@@ -1,4 +1,5 @@
-import { CubeFace, SwipeDirection } from './CubeGameV3Fixed';
+import { CubeFace } from './CubeGameV3Fixed';
+import { SwipeDirection } from './CubeGame';
 
 export interface FaceOrientation {
   face: CubeFace;

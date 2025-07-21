@@ -1,4 +1,5 @@
-import { CubeFace, SwipeDirection, TileMovement, CubeRotation } from './CubeGameV3Fixed';
+import { CubeFace, TileMovement, CubeRotation } from './CubeGameV3Fixed';
+import { SwipeDirection } from './CubeGame';
 import { RotationAwareCoordinateSystem } from './RotationAwareCoordinateSystem';
 
 /**
@@ -297,7 +298,7 @@ export class CubeGameRotationAware {
         break;
     }
     
-    return { axis, angle, direction, targetFace: toFace };
+    return { axis, angle };
   }
   
   // Getters and game state methods

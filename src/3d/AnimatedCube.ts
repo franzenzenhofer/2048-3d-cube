@@ -142,7 +142,21 @@ export class AnimatedCube {
     });
   }
 
+
   public updateFromGame(game: CubeGameV3Fixed, skipAnimation: boolean = false): void {
+    // Track which positions already have tiles
+    const existingTiles = new Map<string, boolean>();
+    
+    this.tileGroups.forEach((tiles, face) => {
+      tiles.forEach((row, r) => {
+        row.forEach((tileGroup, c) => {
+          if (tileGroup.children.length > 0) {
+            existingTiles.set(`${face}-${r}-${c}`, true);
+          }
+        });
+      });
+    });
+
     // Clear existing tiles
     this.tileGroups.forEach((tiles, face) => {
       tiles.forEach(row => {
@@ -172,7 +186,10 @@ export class AnimatedCube {
         for (let c = 0; c < 4; c++) {
           const value = grid[r][c];
           if (value > 0) {
-            this.createTile(tiles[r][c], value, skipAnimation);
+            // Only animate if this is a NEW tile (wasn't there before)
+            const key = `${face}-${r}-${c}`;
+            const isNewTile = !existingTiles.has(key);
+            this.createTile(tiles[r][c], value, skipAnimation || !isNewTile);
           }
         }
       }
@@ -234,20 +251,19 @@ export class AnimatedCube {
     sprite.position.z = 0.1;
     container.add(sprite);
 
+    // Only add spawn animation for truly new tiles
     if (!skipAnimation) {
-      // Add entrance animation
-      const group = new THREE.Group();
-      group.add(edges);
-      group.add(sprite);
-      container.add(group);
+      // Create a group for both edges and sprite
+      edges.scale.set(0, 0, 1);
+      sprite.scale.set(0, 0, 1);
       
-      group.scale.set(0, 0, 1);
       const startTime = Date.now();
       const animate = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / 300, 1);
         const scale = this.easeOutBack(progress);
-        group.scale.set(scale, scale, 1);
+        edges.scale.set(scale, scale, 1);
+        sprite.scale.set(scale * 0.8, scale * 0.8, 1);
         
         if (progress < 1) {
           requestAnimationFrame(animate);
@@ -260,6 +276,88 @@ export class AnimatedCube {
   public async animateMovements(movements: TileMovement[], activeFace: CubeFace): Promise<void> {
     // Movements happen on ALL faces simultaneously
     await this.animateMovementGroup(movements);
+    
+    // After movement, apply merge effects to tiles that merged
+    await this.applyMergeEffects(movements);
+  }
+
+  private applyMergeEffects(movements: TileMovement[]): Promise<void> {
+    return new Promise(resolve => {
+      const mergedTiles: Array<{face: CubeFace, pos: [number, number]}> = [];
+      
+      // Collect all tiles that merged
+      movements.forEach(move => {
+        if (move.merged && move.face) {
+          mergedTiles.push({
+            face: move.face,
+            pos: move.toPos
+          });
+        }
+      });
+      
+      if (mergedTiles.length === 0) {
+        resolve();
+        return;
+      }
+      
+      // Apply a glow/flash effect to merged tiles
+      const duration = 400;
+      const startTime = Date.now();
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        mergedTiles.forEach(({face, pos}) => {
+          const tiles = this.tileGroups.get(face)!;
+          const tileGroup = tiles[pos[0]][pos[1]];
+          
+          if (tileGroup.children.length > 0) {
+            // Create a bright flash effect
+            const intensity = Math.sin(progress * Math.PI); // 0 -> 1 -> 0
+            
+            // Scale effect: subtle grow and shrink
+            const scale = 1 + (intensity * 0.15); // Max 1.15x
+            tileGroup.scale.setScalar(scale);
+            
+            // Optional: Add emissive glow to edges (if they're LineSegments)
+            tileGroup.children.forEach(child => {
+              if (child instanceof THREE.LineSegments) {
+                const material = child.material as THREE.LineBasicMaterial;
+                if (material.color) {
+                  // Brighten the color temporarily
+                  const baseColor = material.color.getHex();
+                  const r = ((baseColor >> 16) & 255) / 255;
+                  const g = ((baseColor >> 8) & 255) / 255;
+                  const b = (baseColor & 255) / 255;
+                  
+                  // Interpolate towards white based on intensity
+                  material.color.setRGB(
+                    r + (1 - r) * intensity * 0.5,
+                    g + (1 - g) * intensity * 0.5,
+                    b + (1 - b) * intensity * 0.5
+                  );
+                }
+              }
+            });
+          }
+        });
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Reset scales
+          mergedTiles.forEach(({face, pos}) => {
+            const tiles = this.tileGroups.get(face)!;
+            const tileGroup = tiles[pos[0]][pos[1]];
+            tileGroup.scale.setScalar(1);
+          });
+          resolve();
+        }
+      };
+      
+      animate();
+    });
   }
 
   private animateMovementGroup(movements: TileMovement[]): Promise<void> {
@@ -271,9 +369,7 @@ export class AnimatedCube {
       const animations: Array<{
         element: THREE.Object3D,
         from: THREE.Vector3,
-        to: THREE.Vector3,
-        fromScale: number,
-        toScale: number
+        to: THREE.Vector3
       }> = [];
       
       movements.forEach(move => {
@@ -284,7 +380,17 @@ export class AnimatedCube {
         const toTile = tiles[move.toPos[0]][move.toPos[1]];
         
         if (fromTile.children.length > 0) {
-          const element = fromTile.children[0];
+          // Move ALL children from fromTile to a temporary container
+          const moveContainer = new THREE.Group();
+          
+          // Copy all children to the move container
+          while (fromTile.children.length > 0) {
+            moveContainer.add(fromTile.children[0]);
+          }
+          
+          // Add the container back to fromTile for animation
+          fromTile.add(moveContainer);
+          
           const fromWorld = new THREE.Vector3();
           const toWorld = new THREE.Vector3();
           
@@ -292,11 +398,9 @@ export class AnimatedCube {
           toTile.getWorldPosition(toWorld);
           
           animations.push({
-            element,
+            element: moveContainer,
             from: fromWorld,
-            to: toWorld,
-            fromScale: 1,
-            toScale: move.merged ? 1.2 : 1
+            to: toWorld
           });
         }
       });
@@ -310,14 +414,40 @@ export class AnimatedCube {
           const pos = new THREE.Vector3().lerpVectors(anim.from, anim.to, eased);
           anim.element.parent?.worldToLocal(pos);
           anim.element.position.copy(pos);
-          
-          const scale = anim.fromScale + (anim.toScale - anim.fromScale) * eased;
-          anim.element.scale.setScalar(scale);
+          // NO SCALE ANIMATION - just pure movement
         });
         
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else {
+          // Animation complete - now properly move tiles to their final positions
+          movements.forEach(move => {
+            const face = move.face || CubeFace.FRONT;
+            const tiles = this.tileGroups.get(face)!;
+            const fromTile = tiles[move.fromPos[0]][move.fromPos[1]];
+            const toTile = tiles[move.toPos[0]][move.toPos[1]];
+            
+            // Move all children from source to destination
+            while (fromTile.children.length > 0) {
+              const child = fromTile.children[0];
+              if (child instanceof THREE.Group && child.children.length > 0) {
+                // This is our move container - extract its children
+                while (child.children.length > 0) {
+                  toTile.add(child.children[0]);
+                }
+                fromTile.remove(child);
+              } else {
+                // Direct child
+                toTile.add(child);
+              }
+            }
+            
+            // Reset position since tile is now in correct container
+            toTile.children.forEach(child => {
+              child.position.set(0, 0, child.position.z);
+            });
+          });
+          
           resolve();
         }
       };
@@ -399,6 +529,45 @@ export class AnimatedCube {
     this.cubeGroup.rotation.x = angles.x * Math.PI / 180;
     this.cubeGroup.rotation.y = angles.y * Math.PI / 180;
     this.cubeGroup.rotation.z = angles.z * Math.PI / 180;
+  }
+
+  public getCubeGroup(): THREE.Group {
+    return this.cubeGroup;
+  }
+
+  public snapToForwardFace(game: CubeGameV3Fixed): void {
+    const duration = 300;
+    const startTime = Date.now();
+    
+    // Get the target rotation for the current forward face
+    const targetAngles = this.rotationSystem.getRotationAngles();
+    const targetRotation = {
+      x: targetAngles.x * Math.PI / 180,
+      y: targetAngles.y * Math.PI / 180,
+      z: targetAngles.z * Math.PI / 180
+    };
+    
+    const startRotation = {
+      x: this.cubeGroup.rotation.x,
+      y: this.cubeGroup.rotation.y,
+      z: this.cubeGroup.rotation.z
+    };
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = this.easeInOutCubic(progress);
+      
+      this.cubeGroup.rotation.x = startRotation.x + (targetRotation.x - startRotation.x) * eased;
+      this.cubeGroup.rotation.y = startRotation.y + (targetRotation.y - startRotation.y) * eased;
+      this.cubeGroup.rotation.z = startRotation.z + (targetRotation.z - startRotation.z) * eased;
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    animate();
   }
 
   public dispose(): void {

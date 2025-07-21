@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { CubeFace, SwipeDirection } from './CubeGameV3Fixed';
+import { CubeFace } from './CubeGameV3Fixed';
+import { SwipeDirection } from './CubeGame';
 
 /**
  * Rotation-Aware Coordinate System for 3D 2048

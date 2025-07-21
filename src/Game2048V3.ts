@@ -1,4 +1,5 @@
-import { CubeGameV3Fixed, SwipeDirection, CubeFace } from './game/CubeGameV3Fixed';
+import { CubeGameV3Fixed, CubeFace } from './game/CubeGameV3Fixed';
+import { SwipeDirection } from './game/CubeGame';
 import { EnhancedScene } from './3d/EnhancedScene';
 import { AnimatedCube } from './3d/AnimatedCube';
 import { TouchControls } from './ui/TouchControls';
@@ -13,6 +14,8 @@ export class Game2048V3 {
   private container: HTMLElement;
   private isAnimating: boolean = false;
   private gameStarted: boolean = false;
+  private freeRotationStartRotation: { x: number; y: number } | null = null;
+  private freeRotationActive: boolean = false;
 
   constructor() {
     this.setupDOM();
@@ -47,7 +50,10 @@ export class Game2048V3 {
     this.controls = new TouchControls(
       this.container,
       (direction) => this.handleMove(direction),
-      () => this.restart()
+      () => this.restart(),
+      () => this.handleRotateStart(),
+      (rotation) => this.handleRotate(rotation),
+      () => this.handleRotateEnd()
     );
     
     this.updateVisuals(true);
@@ -72,8 +78,8 @@ export class Game2048V3 {
       // Step 2: Update visuals to show merged tiles and new spawned tile
       this.updateVisuals();
       
-      // Step 3: Small delay to let merges be visible
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Step 3: Longer delay to let merges be visible before rotating
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Step 4: Rotate the cube to show the new active face
       if (result.rotation) {
@@ -107,6 +113,33 @@ export class Game2048V3 {
     // Show active face indicator
     const activeFace = this.game.getActiveFace();
     this.cube.highlightActiveFace(activeFace);
+  }
+
+  private handleRotateStart(): void {
+    if (!this.isAnimating) {
+      this.freeRotationActive = true;
+      const cubeGroup = this.cube.getCubeGroup();
+      this.freeRotationStartRotation = {
+        x: cubeGroup.rotation.x,
+        y: cubeGroup.rotation.y
+      };
+    }
+  }
+
+  private handleRotate(rotation: number): void {
+    if (this.freeRotationActive && this.freeRotationStartRotation) {
+      const cubeGroup = this.cube.getCubeGroup();
+      // Apply rotation based on gesture
+      cubeGroup.rotation.y = this.freeRotationStartRotation.y + (rotation * Math.PI / 180);
+    }
+  }
+
+  private handleRotateEnd(): void {
+    if (this.freeRotationActive) {
+      this.freeRotationActive = false;
+      // Snap back to forward face
+      this.cube.snapToForwardFace(this.game);
+    }
   }
 
   private restart(): void {
