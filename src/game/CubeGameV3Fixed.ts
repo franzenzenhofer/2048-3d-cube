@@ -15,34 +15,32 @@ export enum SwipeDirection {
 }
 
 export interface TileMovement {
-  fromFace: CubeFace;
-  toFace: CubeFace;
   fromPos: [number, number];
   toPos: [number, number];
   value: number;
   merged: boolean;
-  crossFace?: boolean;
 }
 
 export interface CubeRotation {
   axis: 'x' | 'y';
   angle: number;
   direction: SwipeDirection;
+  targetFace: CubeFace;
 }
 
 export class CubeGameV3Fixed {
   private faces: Map<CubeFace, number[][]> = new Map();
   private score: number = 0;
   private moveHistory: TileMovement[] = [];
-  private currentFrontFace: CubeFace = CubeFace.FRONT;
+  private activeFace: CubeFace = CubeFace.FRONT;
   
   constructor() {
     this.initializeFaces();
-    // Add initial tiles to ALL faces
     this.addInitialTiles();
   }
 
   private initializeFaces(): void {
+    // Create 6 independent 2048 boards
     Object.values(CubeFace).forEach(face => {
       this.faces.set(face as CubeFace, this.createEmptyGrid());
     });
@@ -53,7 +51,7 @@ export class CubeGameV3Fixed {
   }
 
   private addInitialTiles(): void {
-    // Add 2 random tiles to each face for a proper 6-sided game
+    // Each face gets 2 random tiles - they are independent games
     Object.values(CubeFace).forEach(face => {
       this.addRandomTilesToFace(face as CubeFace, 2);
     });
@@ -80,33 +78,22 @@ export class CubeGameV3Fixed {
 
   public move(direction: SwipeDirection): { moved: boolean; rotation?: CubeRotation } {
     this.moveHistory = [];
-    let totalMoved = false;
-
-    // First, move tiles within each face in the swipe direction
-    Object.values(CubeFace).forEach(face => {
-      const movements = this.moveTilesInFace(face as CubeFace, direction);
-      if (movements.length > 0) {
-        totalMoved = true;
-        this.moveHistory.push(...movements);
-      }
-    });
-
-    // Then handle cross-face movements based on direction
-    const crossFaceMovements = this.handleCrossFaceMovements(direction);
-    if (crossFaceMovements.length > 0) {
-      totalMoved = true;
-      this.moveHistory.push(...crossFaceMovements);
-    }
-
-    if (totalMoved) {
-      // Add a new tile to the current front face
-      this.addRandomTilesToFace(this.currentFrontFace, 1);
+    
+    // ONLY move tiles on the ACTIVE face (6 independent boards concept)
+    const movements = this.moveTilesInFace(this.activeFace, direction);
+    
+    if (movements.length > 0) {
+      this.moveHistory = movements;
       
-      // Calculate rotation
-      const rotation = this.getRotationForSwipe(direction);
+      // Add new tile to the active face after move
+      this.addRandomTilesToFace(this.activeFace, 1);
       
-      // Update current front face after rotation
-      this.updateFrontFace(direction);
+      // Determine which face becomes active based on swipe direction
+      const newActiveFace = this.getOppositeFace(direction);
+      const rotation = this.getRotationForTransition(this.activeFace, newActiveFace, direction);
+      
+      // Update active face
+      this.activeFace = newActiveFace;
       
       return { moved: true, rotation };
     }
@@ -137,8 +124,6 @@ export class CubeGameV3Fixed {
           if (originalTile.col !== i || merged[i].merged) {
             changed = true;
             movements.push({
-              fromFace: face,
-              toFace: face,
               fromPos: [row, originalTile.col],
               toPos: [row, i],
               value: merged[i].value,
@@ -165,8 +150,6 @@ export class CubeGameV3Fixed {
           if (originalTile.col !== targetCol || merged[i].merged) {
             changed = true;
             movements.push({
-              fromFace: face,
-              toFace: face,
               fromPos: [row, originalTile.col],
               toPos: [row, targetCol],
               value: merged[i].value,
@@ -192,8 +175,6 @@ export class CubeGameV3Fixed {
           if (originalTile.row !== i || merged[i].merged) {
             changed = true;
             movements.push({
-              fromFace: face,
-              toFace: face,
               fromPos: [originalTile.row, col],
               toPos: [i, col],
               value: merged[i].value,
@@ -220,8 +201,6 @@ export class CubeGameV3Fixed {
           if (originalTile.row !== targetRow || merged[i].merged) {
             changed = true;
             movements.push({
-              fromFace: face,
-              toFace: face,
               fromPos: [originalTile.row, col],
               toPos: [targetRow, col],
               value: merged[i].value,
@@ -237,85 +216,6 @@ export class CubeGameV3Fixed {
     }
 
     return movements;
-  }
-
-  private handleCrossFaceMovements(direction: SwipeDirection): TileMovement[] {
-    const movements: TileMovement[] = [];
-    
-    // Handle edge tiles that can move to adjacent faces
-    if (direction === SwipeDirection.LEFT) {
-      // Tiles on left edge of FRONT can move to right edge of LEFT
-      this.transferEdgeTiles(CubeFace.FRONT, CubeFace.LEFT, 'left', 'right', movements);
-      this.transferEdgeTiles(CubeFace.RIGHT, CubeFace.FRONT, 'left', 'right', movements);
-      this.transferEdgeTiles(CubeFace.BACK, CubeFace.RIGHT, 'left', 'right', movements);
-      this.transferEdgeTiles(CubeFace.LEFT, CubeFace.BACK, 'left', 'right', movements);
-    } else if (direction === SwipeDirection.RIGHT) {
-      // Tiles on right edge can move to left edge of next face
-      this.transferEdgeTiles(CubeFace.FRONT, CubeFace.RIGHT, 'right', 'left', movements);
-      this.transferEdgeTiles(CubeFace.LEFT, CubeFace.FRONT, 'right', 'left', movements);
-      this.transferEdgeTiles(CubeFace.BACK, CubeFace.LEFT, 'right', 'left', movements);
-      this.transferEdgeTiles(CubeFace.RIGHT, CubeFace.BACK, 'right', 'left', movements);
-    } else if (direction === SwipeDirection.UP) {
-      // Tiles on top edge can move to bottom edge of face above
-      this.transferEdgeTiles(CubeFace.FRONT, CubeFace.TOP, 'top', 'bottom', movements);
-      this.transferEdgeTiles(CubeFace.BOTTOM, CubeFace.FRONT, 'top', 'bottom', movements);
-      this.transferEdgeTiles(CubeFace.BACK, CubeFace.BOTTOM, 'top', 'bottom', movements);
-      this.transferEdgeTiles(CubeFace.TOP, CubeFace.BACK, 'top', 'bottom', movements);
-    } else { // DOWN
-      // Tiles on bottom edge can move to top edge of face below
-      this.transferEdgeTiles(CubeFace.FRONT, CubeFace.BOTTOM, 'bottom', 'top', movements);
-      this.transferEdgeTiles(CubeFace.TOP, CubeFace.FRONT, 'bottom', 'top', movements);
-      this.transferEdgeTiles(CubeFace.BACK, CubeFace.TOP, 'bottom', 'top', movements);
-      this.transferEdgeTiles(CubeFace.BOTTOM, CubeFace.BACK, 'bottom', 'top', movements);
-    }
-    
-    return movements;
-  }
-
-  private transferEdgeTiles(
-    fromFace: CubeFace, 
-    toFace: CubeFace, 
-    fromEdge: 'top' | 'bottom' | 'left' | 'right',
-    toEdge: 'top' | 'bottom' | 'left' | 'right',
-    movements: TileMovement[]
-  ): void {
-    const fromGrid = this.faces.get(fromFace)!;
-    const toGrid = this.faces.get(toFace)!;
-    
-    // Get edge positions
-    const fromPositions = this.getEdgePositions(fromEdge);
-    const toPositions = this.getEdgePositions(toEdge);
-    
-    // Check if there's room to transfer
-    for (let i = 0; i < 4; i++) {
-      const fromPos = fromPositions[i];
-      const toPos = toPositions[i];
-      
-      if (fromGrid[fromPos[0]][fromPos[1]] > 0 && toGrid[toPos[0]][toPos[1]] === 0) {
-        // Transfer tile
-        toGrid[toPos[0]][toPos[1]] = fromGrid[fromPos[0]][fromPos[1]];
-        fromGrid[fromPos[0]][fromPos[1]] = 0;
-        
-        movements.push({
-          fromFace,
-          toFace,
-          fromPos,
-          toPos,
-          value: toGrid[toPos[0]][toPos[1]],
-          merged: false,
-          crossFace: true
-        });
-      }
-    }
-  }
-
-  private getEdgePositions(edge: 'top' | 'bottom' | 'left' | 'right'): Array<[number, number]> {
-    switch (edge) {
-      case 'top': return [[0, 0], [0, 1], [0, 2], [0, 3]];
-      case 'bottom': return [[3, 0], [3, 1], [3, 2], [3, 3]];
-      case 'left': return [[0, 0], [1, 0], [2, 0], [3, 0]];
-      case 'right': return [[0, 3], [1, 3], [2, 3], [3, 3]];
-    }
   }
 
   private mergeLine(tiles: number[]): Array<{value: number, merged: boolean, originalIndex: number}> {
@@ -339,66 +239,49 @@ export class CubeGameV3Fixed {
     return result;
   }
 
-  private getRotationForSwipe(direction: SwipeDirection): CubeRotation {
-    // Rotate cube in the same direction as swipe
+  private getOppositeFace(direction: SwipeDirection): CubeFace {
+    // Swipe direction determines which opposite face becomes active
     switch (direction) {
       case SwipeDirection.LEFT:
-        return { axis: 'y', angle: 90, direction };
+        return CubeFace.RIGHT;
       case SwipeDirection.RIGHT:
-        return { axis: 'y', angle: -90, direction };
+        return CubeFace.LEFT;
       case SwipeDirection.UP:
-        return { axis: 'x', angle: -90, direction };
+        return CubeFace.BOTTOM;
       case SwipeDirection.DOWN:
-        return { axis: 'x', angle: 90, direction };
+        return CubeFace.TOP;
     }
   }
 
-  private updateFrontFace(direction: SwipeDirection): void {
-    // Update which face is front after rotation
-    const transitions: Record<CubeFace, Record<SwipeDirection, CubeFace>> = {
-      [CubeFace.FRONT]: {
-        [SwipeDirection.LEFT]: CubeFace.RIGHT,
-        [SwipeDirection.RIGHT]: CubeFace.LEFT,
-        [SwipeDirection.UP]: CubeFace.BOTTOM,
-        [SwipeDirection.DOWN]: CubeFace.TOP
-      },
-      [CubeFace.LEFT]: {
-        [SwipeDirection.LEFT]: CubeFace.FRONT,
-        [SwipeDirection.RIGHT]: CubeFace.BACK,
-        [SwipeDirection.UP]: CubeFace.LEFT,  // Stays same on vertical rotation
-        [SwipeDirection.DOWN]: CubeFace.LEFT
-      },
-      [CubeFace.RIGHT]: {
-        [SwipeDirection.LEFT]: CubeFace.BACK,
-        [SwipeDirection.RIGHT]: CubeFace.FRONT,
-        [SwipeDirection.UP]: CubeFace.RIGHT,  // Stays same on vertical rotation
-        [SwipeDirection.DOWN]: CubeFace.RIGHT
-      },
-      [CubeFace.BACK]: {
-        [SwipeDirection.LEFT]: CubeFace.LEFT,
-        [SwipeDirection.RIGHT]: CubeFace.RIGHT,
-        [SwipeDirection.UP]: CubeFace.TOP,
-        [SwipeDirection.DOWN]: CubeFace.BOTTOM
-      },
-      [CubeFace.TOP]: {
-        [SwipeDirection.LEFT]: CubeFace.TOP,  // Stays same on horizontal rotation
-        [SwipeDirection.RIGHT]: CubeFace.TOP,
-        [SwipeDirection.UP]: CubeFace.BACK,
-        [SwipeDirection.DOWN]: CubeFace.FRONT
-      },
-      [CubeFace.BOTTOM]: {
-        [SwipeDirection.LEFT]: CubeFace.BOTTOM,  // Stays same on horizontal rotation
-        [SwipeDirection.RIGHT]: CubeFace.BOTTOM,
-        [SwipeDirection.UP]: CubeFace.FRONT,
-        [SwipeDirection.DOWN]: CubeFace.BACK
-      }
-    };
+  private getRotationForTransition(fromFace: CubeFace, toFace: CubeFace, direction: SwipeDirection): CubeRotation {
+    // Calculate rotation to bring the target face to front
+    let axis: 'x' | 'y' = 'y';
+    let angle = 0;
     
-    this.currentFrontFace = transitions[this.currentFrontFace][direction];
+    switch (direction) {
+      case SwipeDirection.LEFT:
+        axis = 'y';
+        angle = -90; // Rotate right face to front
+        break;
+      case SwipeDirection.RIGHT:
+        axis = 'y';
+        angle = 90; // Rotate left face to front
+        break;
+      case SwipeDirection.UP:
+        axis = 'x';
+        angle = 90; // Rotate bottom face to front
+        break;
+      case SwipeDirection.DOWN:
+        axis = 'x';
+        angle = -90; // Rotate top face to front
+        break;
+    }
+    
+    return { axis, angle, direction, targetFace: toFace };
   }
 
-  public getCurrentFrontFace(): CubeFace {
-    return this.currentFrontFace;
+  public getActiveFace(): CubeFace {
+    return this.activeFace;
   }
 
   public getFaceGrid(face: CubeFace): number[][] {
@@ -414,7 +297,7 @@ export class CubeGameV3Fixed {
   }
 
   public isGameOver(): boolean {
-    // Check if any moves are possible on any face
+    // Game is over only if ALL faces have no valid moves
     for (const [face, grid] of this.faces) {
       // Check for empty cells
       for (let r = 0; r < 4; r++) {
@@ -434,6 +317,7 @@ export class CubeGameV3Fixed {
   }
 
   public hasWon(): boolean {
+    // Win if ANY face has 2048
     for (const [_, grid] of this.faces) {
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 4; c++) {
@@ -442,6 +326,16 @@ export class CubeGameV3Fixed {
       }
     }
     return false;
+  }
+
+  public isFaceFull(face: CubeFace): boolean {
+    const grid = this.faces.get(face)!;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (grid[r][c] === 0) return false;
+      }
+    }
+    return true;
   }
 
   public getAllFacesStatus(): Map<CubeFace, {tileCount: number, maxTile: number}> {
@@ -464,5 +358,11 @@ export class CubeGameV3Fixed {
     }
     
     return status;
+  }
+
+  // Test helper method
+  public setTileForTesting(face: CubeFace, row: number, col: number, value: number): void {
+    const grid = this.faces.get(face)!;
+    grid[row][col] = value;
   }
 }

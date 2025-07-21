@@ -59,19 +59,20 @@ export class Game2048V3 {
     
     this.isAnimating = true;
     const previousScore = this.game.getScore();
+    const previousActiveFace = this.game.getActiveFace();
     const result = this.game.move(direction);
     
     if (result.moved) {
-      // First animate tile movements
+      // Animate tile movements on the active face only
       const movements = this.game.getMoveHistory();
       if (movements.length > 0) {
-        await this.cube.animateMovements(movements);
+        await this.cube.animateMovements(movements, previousActiveFace);
       }
       
       // Update visuals after movement
       this.updateVisuals();
       
-      // Then rotate the cube
+      // Then rotate the cube to show the new active face
       if (result.rotation) {
         await this.cube.rotateCube(result.rotation);
       }
@@ -99,6 +100,10 @@ export class Game2048V3 {
   private updateVisuals(skipAnimation: boolean = false): void {
     this.cube.updateFromGame(this.game, skipAnimation);
     this.ui.updateScore(this.game.getScore());
+    
+    // Show active face indicator
+    const activeFace = this.game.getActiveFace();
+    this.cube.highlightActiveFace(activeFace);
   }
 
   private restart(): void {

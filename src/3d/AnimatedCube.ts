@@ -7,6 +7,7 @@ export class AnimatedCube {
   private cubeGroup: THREE.Group;
   private faceGroups: Map<CubeFace, THREE.Group> = new Map();
   private tileGroups: Map<CubeFace, THREE.Group[][]> = new Map();
+  private faceHighlights: Map<CubeFace, THREE.Mesh> = new Map();
   
   private readonly facePositions: Map<CubeFace, THREE.Vector3> = new Map([
     [CubeFace.FRONT, new THREE.Vector3(0, 0, 2)],
@@ -77,6 +78,21 @@ export class AnimatedCube {
       const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
       faceMesh.position.z = -0.05;
       faceGroup.add(faceMesh);
+
+      // Create active face highlight (initially hidden)
+      const highlightGeometry = new THREE.PlaneGeometry(3.9, 3.9);
+      const highlightMaterial = new THREE.MeshPhongMaterial({
+        color: 0x00FF41,
+        emissive: 0x00FF41,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide
+      });
+      const highlightMesh = new THREE.Mesh(highlightGeometry, highlightMaterial);
+      highlightMesh.position.z = -0.06;
+      faceGroup.add(highlightMesh);
+      this.faceHighlights.set(face as CubeFace, highlightMesh);
 
       // Create grid lines with glow
       const gridMaterial = new THREE.LineBasicMaterial({ 
@@ -239,22 +255,12 @@ export class AnimatedCube {
     }
   }
 
-  public async animateMovements(movements: TileMovement[]): Promise<void> {
-    // Group movements by their start time
-    const movementGroups: TileMovement[][] = [];
-    const crossFaceMovements = movements.filter(m => m.crossFace);
-    const sameFaceMovements = movements.filter(m => !m.crossFace);
-    
-    if (sameFaceMovements.length > 0) movementGroups.push(sameFaceMovements);
-    if (crossFaceMovements.length > 0) movementGroups.push(crossFaceMovements);
-    
-    // Animate each group
-    for (const group of movementGroups) {
-      await this.animateMovementGroup(group);
-    }
+  public async animateMovements(movements: TileMovement[], activeFace: CubeFace): Promise<void> {
+    // All movements happen on the active face only
+    await this.animateMovementGroup(movements, activeFace);
   }
 
-  private animateMovementGroup(movements: TileMovement[]): Promise<void> {
+  private animateMovementGroup(movements: TileMovement[], activeFace: CubeFace): Promise<void> {
     return new Promise(resolve => {
       const duration = 300;
       const startTime = Date.now();
@@ -268,12 +274,12 @@ export class AnimatedCube {
         toScale: number
       }> = [];
       
+      // Get tiles from the active face only
+      const tiles = this.tileGroups.get(activeFace)!;
+      
       movements.forEach(move => {
-        const fromTiles = this.tileGroups.get(move.fromFace)!;
-        const toTiles = this.tileGroups.get(move.toFace)!;
-        
-        const fromTile = fromTiles[move.fromPos[0]][move.fromPos[1]];
-        const toTile = toTiles[move.toPos[0]][move.toPos[1]];
+        const fromTile = tiles[move.fromPos[0]][move.fromPos[1]];
+        const toTile = tiles[move.toPos[0]][move.toPos[1]];
         
         if (fromTile.children.length > 0) {
           const element = fromTile.children[0];
@@ -363,6 +369,14 @@ export class AnimatedCube {
     const c1 = 1.70158;
     const c3 = c1 + 1;
     return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  }
+
+  public highlightActiveFace(face: CubeFace): void {
+    // Fade out all highlights
+    this.faceHighlights.forEach((highlight, f) => {
+      const material = highlight.material as THREE.MeshPhongMaterial;
+      material.opacity = f === face ? 0.1 : 0;
+    });
   }
 
   public dispose(): void {

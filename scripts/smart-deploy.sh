@@ -47,16 +47,42 @@ fi
 
 # Run tests unless skipped
 if [ "$SKIP_TESTS" = false ]; then
-  log_info "🧪 Running tests..."
+  log_info "🧪 Running unit tests..."
+  UNIT_TEST_FAILED=false
   if npm test -- --run; then
-    log_success "✅ All tests passed!"
+    log_success "✅ Unit tests passed!"
   else
-    log_error "❌ Tests failed!"
+    log_warn "⚠️  Some unit tests failed"
+    UNIT_TEST_FAILED=true
+  fi
+  
+  log_info "🎭 Running E2E tests..."
+  E2E_TEST_FAILED=false
+  if timeout 300 npm run test:e2e; then
+    log_success "✅ E2E tests passed!"
+  else
+    log_warn "⚠️  Some E2E tests failed or timed out"
+    E2E_TEST_FAILED=true
+  fi
+  
+  # Take screenshots during E2E tests
+  if [ -d "screenshots" ]; then
+    SCREENSHOT_COUNT=$(ls -1 screenshots/*.png 2>/dev/null | wc -l)
+    if [ "$SCREENSHOT_COUNT" -gt 0 ]; then
+      log_success "📸 Generated $SCREENSHOT_COUNT screenshots"
+    fi
+  fi
+  
+  # Decide whether to continue
+  if [ "$UNIT_TEST_FAILED" = true ] || [ "$E2E_TEST_FAILED" = true ]; then
     if [ "$FORCE_DEPLOY" = false ]; then
-      log_error "Deploy aborted. Use --skip-tests to bypass."
+      log_error "❌ Tests failed! Deploy aborted."
+      log_error "   Use --force to deploy anyway or --skip-tests to bypass."
       exit 1
     fi
     log_warn "⚠️  Continuing despite test failures (--force mode)"
+  else
+    log_success "✅ All tests passed!"
   fi
 else
   log_warn "⏭️  Skipping tests (--skip-tests flag)"
