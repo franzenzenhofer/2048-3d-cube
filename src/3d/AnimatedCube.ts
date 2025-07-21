@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CubeGameV3Fixed, CubeFace, TileMovement, CubeRotation } from '../game/CubeGameV3Fixed';
+import { CubeRotationSystem } from '../game/CubeRotationSystem';
 
 export class AnimatedCube {
   private scene: THREE.Scene;
@@ -8,6 +9,7 @@ export class AnimatedCube {
   private faceGroups: Map<CubeFace, THREE.Group> = new Map();
   private tileGroups: Map<CubeFace, THREE.Group[][]> = new Map();
   private faceHighlights: Map<CubeFace, THREE.Mesh> = new Map();
+  private rotationSystem: CubeRotationSystem = new CubeRotationSystem();
   
   private readonly facePositions: Map<CubeFace, THREE.Vector3> = new Map([
     [CubeFace.FRONT, new THREE.Vector3(0, 0, 2)],
@@ -324,19 +326,27 @@ export class AnimatedCube {
     });
   }
 
-  public rotateCube(rotation: CubeRotation): Promise<void> {
+  public rotateCube(rotation: CubeRotation, game: CubeGameV3Fixed): Promise<void> {
     return new Promise(resolve => {
       const duration = 500;
       const startTime = Date.now();
       
+      // Update rotation system to match game state
+      this.rotationSystem.forwardFacing(game.getActiveFace());
+      
+      // Get the programmatic rotation angles for the target face
+      const targetAngles = this.rotationSystem.getRotationAngles();
+      
       const startRotation = {
         x: this.cubeGroup.rotation.x,
-        y: this.cubeGroup.rotation.y
+        y: this.cubeGroup.rotation.y,
+        z: this.cubeGroup.rotation.z
       };
       
       const targetRotation = {
-        x: startRotation.x + (rotation.axis === 'x' ? rotation.angle * Math.PI / 180 : 0),
-        y: startRotation.y + (rotation.axis === 'y' ? rotation.angle * Math.PI / 180 : 0)
+        x: targetAngles.x * Math.PI / 180,
+        y: targetAngles.y * Math.PI / 180,
+        z: targetAngles.z * Math.PI / 180
       };
       
       const animate = () => {
@@ -346,6 +356,7 @@ export class AnimatedCube {
         
         this.cubeGroup.rotation.x = startRotation.x + (targetRotation.x - startRotation.x) * eased;
         this.cubeGroup.rotation.y = startRotation.y + (targetRotation.y - startRotation.y) * eased;
+        this.cubeGroup.rotation.z = startRotation.z + (targetRotation.z - startRotation.z) * eased;
         
         if (progress < 1) {
           requestAnimationFrame(animate);
@@ -377,6 +388,17 @@ export class AnimatedCube {
       const material = highlight.material as THREE.MeshPhongMaterial;
       material.opacity = f === face ? 0.1 : 0;
     });
+  }
+
+  public setForwardFacing(face: CubeFace, game: CubeGameV3Fixed): void {
+    this.rotationSystem.forwardFacing(face);
+    game.forwardFacing(face);
+    
+    // Immediately set the rotation to show this face
+    const angles = this.rotationSystem.getRotationAngles();
+    this.cubeGroup.rotation.x = angles.x * Math.PI / 180;
+    this.cubeGroup.rotation.y = angles.y * Math.PI / 180;
+    this.cubeGroup.rotation.z = angles.z * Math.PI / 180;
   }
 
   public dispose(): void {

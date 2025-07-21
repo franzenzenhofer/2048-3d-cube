@@ -77,7 +77,7 @@ export class Game2048V3 {
       
       // Step 4: Rotate the cube to show the new active face
       if (result.rotation) {
-        await this.cube.rotateCube(result.rotation);
+        await this.cube.rotateCube(result.rotation, this.game);
       }
       
       // Update score with animation

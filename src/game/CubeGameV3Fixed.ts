@@ -30,11 +30,14 @@ export interface CubeRotation {
 }
 
 
+import { CubeRotationSystem } from './CubeRotationSystem';
+
 export class CubeGameV3Fixed {
   private faces: Map<CubeFace, number[][]> = new Map();
   private score: number = 0;
   private moveHistory: TileMovement[] = [];
   private activeFace: CubeFace = CubeFace.FRONT;
+  private rotationSystem: CubeRotationSystem = new CubeRotationSystem();
   
   constructor() {
     this.initializeFaces();
@@ -119,7 +122,7 @@ export class CubeGameV3Fixed {
       });
       
       // Determine which face becomes active based on swipe direction
-      const newActiveFace = this.getOppositeFace(direction);
+      const newActiveFace = this.rotationSystem.rotateToNextFace(direction);
       const rotation = this.getRotationForTransition(this.activeFace, newActiveFace, direction);
       
       // Update active face
@@ -273,18 +276,8 @@ export class CubeGameV3Fixed {
   }
 
   private getOppositeFace(direction: SwipeDirection): CubeFace {
-    // When you swipe, the cube rotates in that direction
-    // This shows the face that was in that direction
-    switch (direction) {
-      case SwipeDirection.LEFT:
-        return CubeFace.LEFT;   // Swipe left → show left face
-      case SwipeDirection.RIGHT:
-        return CubeFace.RIGHT;  // Swipe right → show right face
-      case SwipeDirection.UP:
-        return CubeFace.TOP;    // Swipe up → show top face
-      case SwipeDirection.DOWN:
-        return CubeFace.BOTTOM; // Swipe down → show bottom face
-    }
+    // Use the rotation system to get the next face
+    return this.rotationSystem.getAdjacentFaces()[direction];
   }
 
   private getRotationForTransition(fromFace: CubeFace, toFace: CubeFace, direction: SwipeDirection): CubeRotation {
@@ -315,7 +308,16 @@ export class CubeGameV3Fixed {
   }
 
   public getActiveFace(): CubeFace {
-    return this.activeFace;
+    return this.rotationSystem.getCurrentForwardFace();
+  }
+
+  public forwardFacing(faceId: CubeFace): void {
+    this.rotationSystem.forwardFacing(faceId);
+    this.activeFace = faceId;
+  }
+
+  public getRotationAngles(): { x: number; y: number; z: number } {
+    return this.rotationSystem.getRotationAngles();
   }
 
   public getFaceGrid(face: CubeFace): number[][] {

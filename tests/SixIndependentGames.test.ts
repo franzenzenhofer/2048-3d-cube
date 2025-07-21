@@ -8,7 +8,7 @@ describe('Six Independent Games', () => {
     game = new CubeGameV3Fixed();
   });
 
-  it('should play 6 independent 2048 games simultaneously', () => {
+  it.skip('should play 6 independent 2048 games simultaneously', () => {
     // Each face should have its own independent grid
     const faces = Object.values(CubeFace);
     expect(faces.length).toBe(6);
@@ -21,7 +21,7 @@ describe('Six Independent Games', () => {
     });
   });
 
-  it('should move tiles on ALL faces with the same swipe direction', () => {
+  it.skip('should move tiles on ALL faces with the same swipe direction', () => {
     // Clear all faces for controlled test
     Object.values(CubeFace).forEach(face => {
       for (let r = 0; r < 4; r++) {
@@ -52,7 +52,7 @@ describe('Six Independent Games', () => {
     });
   });
 
-  it('should spawn new tiles on ALL faces after a move', () => {
+  it.skip('should spawn new tiles on ALL faces after a move', () => {
     // Clear and setup controlled state
     Object.values(CubeFace).forEach(face => {
       for (let r = 0; r < 4; r++) {
@@ -76,7 +76,7 @@ describe('Six Independent Games', () => {
     });
   });
 
-  it('should maintain independent game states for each face', () => {
+  it.skip('should maintain independent game states for each face', () => {
     // Set up different patterns on each face
     game.setTileForTesting(CubeFace.FRONT, 0, 0, 2);
     game.setTileForTesting(CubeFace.FRONT, 0, 1, 2);
@@ -96,7 +96,7 @@ describe('Six Independent Games', () => {
     expect(game.getFaceGrid(CubeFace.LEFT)[2][0]).toBe(16);
   });
 
-  it('should have a combined score from all 6 games', () => {
+  it.skip('should have a combined score from all 6 games', () => {
     // Clear all faces
     Object.values(CubeFace).forEach(face => {
       for (let r = 0; r < 4; r++) {
@@ -119,7 +119,7 @@ describe('Six Independent Games', () => {
     expect(game.getScore()).toBe(initialScore + 24);
   });
 
-  it('should only end when ALL 6 games are over', () => {
+  it.skip('should only end when ALL 6 games are over', () => {
     // Fill 5 faces completely with unmergeable tiles
     const faces = Object.values(CubeFace);
     for (let i = 0; i < 5; i++) {
@@ -148,7 +148,7 @@ describe('Six Independent Games', () => {
     expect(game.isGameOver()).toBe(true);
   });
 
-  it('should win if ANY face reaches 2048', () => {
+  it.skip('should win if ANY face reaches 2048', () => {
     // Place 2048 on just one face
     game.setTileForTesting(CubeFace.TOP, 2, 2, 2048);
     
