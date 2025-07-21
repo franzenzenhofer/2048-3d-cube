@@ -96,13 +96,11 @@ export class TouchControls {
       }
     });
 
-    // Single swipes - different behavior based on mode
+    // Single swipes - only work in normal mode
     this.hammer.on('swipeleft', () => {
       if (this.isInRotationMode) {
-        // In rotation mode, swipe exits mode and performs move
-        this.setRotationMode(false);
-        this.onSwipeCallback(SwipeDirection.LEFT);
-        this.haptic(30);
+        // In rotation mode, swipes do nothing
+        return;
       } else if (!this.isRotating) {
         // Normal mode swipe
         this.onSwipeCallback(SwipeDirection.LEFT);
@@ -112,9 +110,8 @@ export class TouchControls {
 
     this.hammer.on('swiperight', () => {
       if (this.isInRotationMode) {
-        this.setRotationMode(false);
-        this.onSwipeCallback(SwipeDirection.RIGHT);
-        this.haptic(30);
+        // In rotation mode, swipes do nothing
+        return;
       } else if (!this.isRotating) {
         this.onSwipeCallback(SwipeDirection.RIGHT);
         this.haptic();
@@ -123,9 +120,8 @@ export class TouchControls {
 
     this.hammer.on('swipeup', () => {
       if (this.isInRotationMode) {
-        this.setRotationMode(false);
-        this.onSwipeCallback(SwipeDirection.UP);
-        this.haptic(30);
+        // In rotation mode, swipes do nothing
+        return;
       } else if (!this.isRotating) {
         this.onSwipeCallback(SwipeDirection.UP);
         this.haptic();
@@ -134,9 +130,8 @@ export class TouchControls {
 
     this.hammer.on('swipedown', () => {
       if (this.isInRotationMode) {
-        this.setRotationMode(false);
-        this.onSwipeCallback(SwipeDirection.DOWN);
-        this.haptic(30);
+        // In rotation mode, swipes do nothing
+        return;
       } else if (!this.isRotating) {
         this.onSwipeCallback(SwipeDirection.DOWN);
         this.haptic();
@@ -215,10 +210,19 @@ export class TouchControls {
       }
     });
 
-    // Double tap to restart
+    // Tap handling - single tap to exit rotation mode, double tap to restart
     this.hammer.get('tap').set({ taps: 2 });
     this.hammer.on('tap', (e) => {
-      if (e.tapCount === 2 && !this.isRotating) {
+      if (e.tapCount === 1 && this.isInRotationMode) {
+        // Single tap exits rotation mode
+        this.setRotationMode(false);
+        this.haptic(30);
+        // Need to trigger exit in Game2048V3
+        if (this.onRotateEndCallback) {
+          this.onRotateEndCallback();
+        }
+      } else if (e.tapCount === 2 && !this.isRotating) {
+        // Double tap restarts game
         this.onRestartCallback();
         this.haptic(20);
       }
