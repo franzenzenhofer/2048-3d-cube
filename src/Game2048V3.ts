@@ -71,10 +71,8 @@ export class Game2048V3 {
   private async handleMove(direction: SwipeDirection): Promise<void> {
     if (this.isAnimating || this.game.isGameOver()) return;
     
-    // If in rotation mode, exit it
-    if (this.rotationMode) {
-      this.exitRotationMode();
-    }
+    // Moves are blocked in rotation mode (handled in TouchControls)
+    if (this.rotationMode) return;
     
     this.isAnimating = true;
     const previousScore = this.game.getScore();
@@ -154,6 +152,12 @@ export class Game2048V3 {
       this.freeRotationActive = false;
       // Don't snap back - allow free inspection!
       // this.cube.snapToForwardFace(this.game);
+    }
+    
+    // Check if this was triggered by tap to exit rotation mode
+    if (this.rotationMode && this.controls) {
+      // Exit rotation mode when tap is detected
+      this.exitRotationMode();
     }
   }
 
