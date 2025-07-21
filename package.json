@@ -1,7 +1,7 @@
 {
   "name": "2048-3d-cube",
   "private": true,
-  "version": "2.2.3",
+  "version": "2.2.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
