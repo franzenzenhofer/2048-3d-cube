@@ -80,9 +80,13 @@ export class TouchControls {
     this.hammer.get('swipe').requireFailure('press');
     
     // Two-finger gestures should work together
-    this.hammer.get('pinch').recognizeWith(['rotate', 'twofingerpan']);
-    this.hammer.get('rotate').recognizeWith(['pinch', 'twofingerpan']);
-    this.hammer.get('twofingerpan').recognizeWith(['pinch', 'rotate']);
+    const pinchRecognizer = this.hammer.get('pinch');
+    const rotateRecognizer = this.hammer.get('rotate');
+    const twoFingerPanRecognizer = this.hammer.get('twofingerpan');
+    
+    pinchRecognizer.recognizeWith([rotateRecognizer, twoFingerPanRecognizer]);
+    rotateRecognizer.recognizeWith([pinchRecognizer, twoFingerPanRecognizer]);
+    twoFingerPanRecognizer.recognizeWith([pinchRecognizer, rotateRecognizer]);
 
     // Long press to enter rotation mode
     this.hammer.on('press', () => {
