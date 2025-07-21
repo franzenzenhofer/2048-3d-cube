@@ -51,6 +51,14 @@ describe('Rotation Mode System', () => {
     mockOnPan = vi.fn();
     mockOnLongPress = vi.fn();
 
+    // Mock window.addEventListener to capture keyboard event handler
+    const keyboardHandler = vi.fn();
+    window.addEventListener = vi.fn((event: string, handler: any) => {
+      if (event === 'keydown') {
+        keyboardHandler.mockImplementation(handler);
+      }
+    });
+
     // Create TouchControls instance
     controls = new TouchControls(
       container,
@@ -63,6 +71,9 @@ describe('Rotation Mode System', () => {
       mockOnPan,
       mockOnLongPress
     );
+
+    // Set up keyboard handler manually
+    (window as any).keyboardHandler = keyboardHandler;
   });
 
   afterEach(() => {
@@ -284,22 +295,28 @@ describe('Rotation Mode System', () => {
 
   describe('Keyboard Controls', () => {
     it('should work regardless of rotation mode', () => {
+      // Get the keyboard handler that was registered
+      const keyboardHandler = (window as any).keyboardHandler;
+      expect(keyboardHandler).toBeDefined();
+      
       // Test in normal mode
       controls.setRotationMode(false);
       
-      const keyEvent = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-      window.dispatchEvent(keyEvent);
+      const keyEvent = { key: 'ArrowLeft', preventDefault: vi.fn() };
+      keyboardHandler(keyEvent);
       
       expect(mockOnSwipe).toHaveBeenCalledWith(SwipeDirection.LEFT);
+      expect(keyEvent.preventDefault).toHaveBeenCalled();
       
       // Test in rotation mode
       mockOnSwipe.mockClear();
       controls.setRotationMode(true);
       
-      const keyEvent2 = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-      window.dispatchEvent(keyEvent2);
+      const keyEvent2 = { key: 'ArrowRight', preventDefault: vi.fn() };
+      keyboardHandler(keyEvent2);
       
       expect(mockOnSwipe).toHaveBeenCalledWith(SwipeDirection.RIGHT);
+      expect(keyEvent2.preventDefault).toHaveBeenCalled();
     });
   });
 });
