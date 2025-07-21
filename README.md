@@ -2,6 +2,8 @@
 
 🎮 **Play Now**: [https://2048-3d.franzai.com](https://2048-3d.franzai.com)
 
+📦 **GitHub**: [https://github.com/franzenzenhofer/2048-3d-cube](https://github.com/franzenzenhofer/2048-3d-cube)
+
 A stunning reimagination of the classic 2048 game in 3D, featuring a rotating cube matrix with neon cyberpunk aesthetics.
 
 ## 🏆 Features
