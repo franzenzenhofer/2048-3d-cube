@@ -20,8 +20,8 @@ export class MinimalUI {
         <h1 class="start-title">2048<span class="cube-3d">³</span></h1>
         <p class="start-subtitle">A 3D PUZZLE</p>
         <div class="start-hint">TAP TO BEGIN</div>
-        <div class="version-start">v${__APP_VERSION__}</div>
       </div>
+      <div class="version-start">v${__APP_VERSION__}</div>
     `;
     this.container.appendChild(this.startScreen);
 

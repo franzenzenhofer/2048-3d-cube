@@ -125,22 +125,23 @@ canvas {
 }
 
 .version-start {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
   font-size: 14px;
   color: var(--neon-green);
   opacity: 0.6;
   font-family: 'Orbitron', monospace;
   font-weight: 700;
   text-shadow: 0 0 10px var(--neon-green);
-  z-index: 1000;
+  z-index: 9999 !important;
   pointer-events: none;
   user-select: none;
-  transform: translate3d(0, 0, 0); /* Force GPU layer */
-  backface-visibility: hidden; /* Prevent flicker */
-  will-change: transform; /* Optimize for stability */
-  isolation: isolate; /* Create new stacking context */
+  /* Prevent ANY movement */
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  will-change: auto !important;
 }
 
 /* Game Screen */
