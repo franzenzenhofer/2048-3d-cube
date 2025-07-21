@@ -1,5 +1,5 @@
 import './style.css';
-import { Game2048Cube } from './Game2048Cube';
+import { Game2048V3 } from './Game2048V3';
 
 // Prevent zoom and scroll on mobile
 document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -8,7 +8,7 @@ document.addEventListener('gestureend', (e) => e.preventDefault());
 
 // Initialize game when DOM is ready
 window.addEventListener('DOMContentLoaded', () => {
-  new Game2048Cube();
+  new Game2048V3();
 });
 
 // Prevent pull-to-refresh
