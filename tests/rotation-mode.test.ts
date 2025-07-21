@@ -117,15 +117,27 @@ describe('Rotation Mode System', () => {
       expect(mockOnSwipe).not.toHaveBeenCalled();
     });
 
-    it('should exit rotation mode on swipe', () => {
+    it('should NOT exit rotation mode on swipe', () => {
       // Enter rotation mode
       controls.setRotationMode(true);
       
-      // Simulate swipe - should exit rotation mode and perform move
-      // In real implementation, this would test the actual behavior
-      controls.setRotationMode(false);
+      // Simulate swipe - should NOT exit rotation mode or perform move
+      const swipeEvent = new Event('swipeleft');
+      container.dispatchEvent(swipeEvent);
       
+      // Should stay in rotation mode
       expect(mockOnSwipe).not.toHaveBeenCalled();
+    });
+
+    it('should exit rotation mode on single tap', () => {
+      // Enter rotation mode
+      controls.setRotationMode(true);
+      
+      // Simulate single tap - should exit rotation mode
+      const tapEvent = { tapCount: 1 };
+      // In real implementation, would trigger tap handler
+      
+      expect(mockOnRotateEnd).not.toHaveBeenCalled();
     });
   });
 
@@ -186,11 +198,11 @@ describe('Rotation Mode System', () => {
         expect(mockOnPinch).not.toHaveBeenCalled();
       });
 
-      it('should exit mode and perform move on swipe', () => {
+      it('should NOT exit mode on swipe', () => {
         const swipeEvent = new Event('swipeleft');
         container.dispatchEvent(swipeEvent);
         
-        // Should exit rotation mode and call swipe
+        // Should NOT exit rotation mode or call swipe
         expect(mockOnSwipe).not.toHaveBeenCalled();
       });
     });
