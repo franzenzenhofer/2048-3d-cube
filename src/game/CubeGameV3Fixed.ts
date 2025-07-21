@@ -29,17 +29,14 @@ export interface CubeRotation {
   targetFace: CubeFace;
 }
 
-import { CubeCoordinateSystem } from './CubeCoordinateSystem';
 
 export class CubeGameV3Fixed {
   private faces: Map<CubeFace, number[][]> = new Map();
   private score: number = 0;
   private moveHistory: TileMovement[] = [];
   private activeFace: CubeFace = CubeFace.FRONT;
-  private coordinateSystem: CubeCoordinateSystem;
   
   constructor() {
-    this.coordinateSystem = new CubeCoordinateSystem();
     this.initializeFaces();
     this.addInitialTiles();
   }
@@ -97,35 +94,29 @@ export class CubeGameV3Fixed {
     let anyFaceMoved = false;
     
     // Move tiles on ALL 6 faces simultaneously!
-    // Each face interprets the direction based on its orientation
-    const facesWithMovement: CubeFace[] = [];
-    
+    // All faces move in the SAME direction from the viewer's perspective
     Object.values(CubeFace).forEach(face => {
-      const typedFace = face as CubeFace;
-      const localDirection = this.coordinateSystem.getLocalDirection(typedFace, direction);
-      const movements = this.moveTilesInFace(typedFace, localDirection);
-      
+      const movements = this.moveTilesInFace(face as CubeFace, direction);
       if (movements.length > 0) {
         anyFaceMoved = true;
-        facesWithMovement.push(typedFace);
         // Add face info to movements for animation
         movements.forEach(m => {
           this.moveHistory.push({
             ...m,
-            face: typedFace
+            face: face as CubeFace
           });
         });
       }
     });
     
     if (anyFaceMoved) {
-      // Add new tile ONLY to the active face after move
-      const tileAdded = this.addRandomTilesToFace(this.activeFace, 1);
-      
-      // Validate tile was actually added
-      if (!tileAdded) {
-        console.warn(`Failed to add tile to ${this.activeFace} face - might be full!`);
-      }
+      // Add new tiles to ALL faces after move!
+      Object.values(CubeFace).forEach(face => {
+        const tileAdded = this.addRandomTilesToFace(face as CubeFace, 1);
+        if (!tileAdded) {
+          console.warn(`Failed to add tile to ${face} face - might be full!`);
+        }
+      });
       
       // Determine which face becomes active based on swipe direction
       const newActiveFace = this.getOppositeFace(direction);
@@ -135,7 +126,7 @@ export class CubeGameV3Fixed {
       this.activeFace = newActiveFace;
       
       // Log state for debugging
-      console.log(`Move ${direction}: ${facesWithMovement.length} faces moved, new active: ${newActiveFace}`);
+      console.log(`Move ${direction}: tiles moved on all faces, new active: ${newActiveFace}`);
       
       return { moved: true, rotation };
     }
@@ -437,10 +428,70 @@ export class CubeGameV3Fixed {
   public canAnyFaceMove(direction: SwipeDirection): boolean {
     for (const face of Object.values(CubeFace)) {
       const grid = this.faces.get(face as CubeFace)!;
-      if (this.coordinateSystem.canFaceMove(face as CubeFace, grid, direction)) {
+      if (this.canFaceMove(grid, direction)) {
         return true;
       }
     }
+    return false;
+  }
+  
+  private canFaceMove(grid: number[][], direction: SwipeDirection): boolean {
+    // Check if any tile can move in the given direction
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        if (grid[row][col] === 0) continue;
+        
+        // Check if this tile can move
+        if (this.canTileMove(grid, row, col, direction)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
+  private canTileMove(grid: number[][], row: number, col: number, direction: SwipeDirection): boolean {
+    const value = grid[row][col];
+    if (value === 0) return false;
+    
+    switch (direction) {
+      case SwipeDirection.LEFT:
+        // Can move left if there's empty space or same value to the left
+        for (let c = col - 1; c >= 0; c--) {
+          if (grid[row][c] === 0) return true;
+          if (grid[row][c] === value) return true;
+          break; // Blocked by different value
+        }
+        break;
+        
+      case SwipeDirection.RIGHT:
+        // Can move right if there's empty space or same value to the right
+        for (let c = col + 1; c < 4; c++) {
+          if (grid[row][c] === 0) return true;
+          if (grid[row][c] === value) return true;
+          break; // Blocked by different value
+        }
+        break;
+        
+      case SwipeDirection.UP:
+        // Can move up if there's empty space or same value above
+        for (let r = row - 1; r >= 0; r--) {
+          if (grid[r][col] === 0) return true;
+          if (grid[r][col] === value) return true;
+          break; // Blocked by different value
+        }
+        break;
+        
+      case SwipeDirection.DOWN:
+        // Can move down if there's empty space or same value below
+        for (let r = row + 1; r < 4; r++) {
+          if (grid[r][col] === 0) return true;
+          if (grid[r][col] === value) return true;
+          break; // Blocked by different value
+        }
+        break;
+    }
+    
     return false;
   }
 }

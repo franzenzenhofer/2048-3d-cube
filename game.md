@@ -1,4 +1,4 @@
-# 3D 2048: A Mathematical and Design Analysis
+# 3D 2048: Six Independent Games in One - A Mathematical and Design Analysis
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
@@ -12,13 +12,19 @@
 
 ## Executive Summary
 
-Creating a 3D version of 2048 presents unique challenges that go beyond simply adding a third dimension. The core gameplay loop of 2048 relies on:
-- Clear visibility of all tiles
-- Predictable movement patterns
-- Immediate visual feedback
-- Strategic planning based on tile positions
+**3D 2048 is 6 independent 2048 games played simultaneously on the faces of a cube.**
 
-In 3D, these requirements conflict with physical limitations of displaying a cube where only 3 faces are visible at once.
+The revolutionary concept: 
+- Each face of the cube is a complete, independent 2048 game
+- ALL six games respond to the SAME swipe direction simultaneously
+- After each move, the cube rotates to show you a different face
+- You're essentially playing 6 games at once with one set of controls
+
+This creates a unique gameplay experience where:
+- Every swipe affects 6 different game boards
+- You must think about consequences across multiple games
+- The rotating cube gives you glimpses of all your games in sequence
+- Strategy involves managing 6 independent scores and game states
 
 ## The Fundamental Problem
 

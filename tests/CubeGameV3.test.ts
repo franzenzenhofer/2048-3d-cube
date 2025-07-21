@@ -29,8 +29,8 @@ describe('CubeGameV3Fixed', () => {
       });
     });
 
-    it('should start with FRONT as current face', () => {
-      expect(game.getCurrentFrontFace()).toBe(CubeFace.FRONT);
+    it('should start with FRONT as active face', () => {
+      expect(game.getActiveFace()).toBe(CubeFace.FRONT);
     });
 
     it('should start with score 0', () => {
@@ -90,7 +90,7 @@ describe('CubeGameV3Fixed', () => {
     });
 
     it('should rotate cube after move', () => {
-      const initialFace = game.getCurrentFrontFace();
+      const initialFace = game.getActiveFace();
       
       // Make a move that should work
       const result = game.move(SwipeDirection.LEFT);
@@ -101,7 +101,7 @@ describe('CubeGameV3Fixed', () => {
         expect(result.rotation?.angle).toBe(90);
         
         // Front face should change after LEFT swipe
-        const newFace = game.getCurrentFrontFace();
+        const newFace = game.getActiveFace();
         expect(newFace).toBe(CubeFace.RIGHT);
       }
     });
@@ -166,11 +166,11 @@ describe('CubeGameV3Fixed', () => {
 
       rotationTests.forEach(test => {
         const testGame = new CubeGameV3Fixed();
-        expect(testGame.getCurrentFrontFace()).toBe(CubeFace.FRONT);
+        expect(testGame.getActiveFace()).toBe(CubeFace.FRONT);
         
         const result = testGame.move(test.direction);
         if (result.moved) {
-          expect(testGame.getCurrentFrontFace()).toBe(test.expectedFace);
+          expect(testGame.getActiveFace()).toBe(test.expectedFace);
         }
       });
     });

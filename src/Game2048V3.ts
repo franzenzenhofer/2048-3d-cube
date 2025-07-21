@@ -63,21 +63,24 @@ export class Game2048V3 {
     const result = this.game.move(direction);
     
     if (result.moved) {
-      // Animate tile movements on the active face only
+      // Step 1: Animate tile movements on ALL faces
       const movements = this.game.getMoveHistory();
       if (movements.length > 0) {
         await this.cube.animateMovements(movements, previousActiveFace);
       }
       
-      // Update visuals after movement
+      // Step 2: Update visuals to show merged tiles and new spawned tile
       this.updateVisuals();
       
-      // Then rotate the cube to show the new active face
+      // Step 3: Small delay to let merges be visible
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Step 4: Rotate the cube to show the new active face
       if (result.rotation) {
         await this.cube.rotateCube(result.rotation);
       }
       
-      // Update score
+      // Update score with animation
       if (this.game.getScore() > previousScore) {
         this.ui.updateScore(this.game.getScore());
       }
