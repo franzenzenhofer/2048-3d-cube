@@ -16,5 +16,9 @@ export default defineConfig({
         assetFileNames: `assets/[name]-[hash].[ext]`
       }
     }
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts']
   }
 });
