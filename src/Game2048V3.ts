@@ -163,12 +163,19 @@ export class Game2048V3 {
     const cubeGroup = this.cube.getCubeGroup();
     const sensitivity = 0.005; // Adjust for comfortable rotation speed
     
-    // Rotate based on drag distance
-    cubeGroup.rotation.y = this.freeRotationStartRotation.y - (deltaX * sensitivity);
-    cubeGroup.rotation.x = this.freeRotationStartRotation.x - (deltaY * sensitivity);
-    
-    // Clamp X rotation to prevent flipping
-    cubeGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cubeGroup.rotation.x));
+    if (this.rotationMode) {
+      // In rotation mode: full 360° rotation on all axes
+      cubeGroup.rotation.y = this.freeRotationStartRotation.y - (deltaX * sensitivity);
+      cubeGroup.rotation.x = this.freeRotationStartRotation.x - (deltaY * sensitivity);
+      // No clamping - allow full rotation!
+    } else {
+      // Normal mode: limited rotation with clamping
+      cubeGroup.rotation.y = this.freeRotationStartRotation.y - (deltaX * sensitivity);
+      cubeGroup.rotation.x = this.freeRotationStartRotation.x - (deltaY * sensitivity);
+      
+      // Clamp X rotation to prevent flipping
+      cubeGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cubeGroup.rotation.x));
+    }
   }
 
   private handlePinch(scale: number): void {
