@@ -123,7 +123,7 @@ canvas {
 }
 
 .version-start {
-  position: absolute;
+  position: fixed;
   bottom: 1rem;
   right: 1rem;
   font-size: 1rem;
@@ -132,6 +132,9 @@ canvas {
   font-family: 'Orbitron', monospace;
   font-weight: 700;
   text-shadow: 0 0 10px var(--neon-green);
+  z-index: 10;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* Game Screen */
