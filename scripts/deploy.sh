@@ -4,9 +4,20 @@ set -euo pipefail
 PROJECT_NAME="2048-3d-cube"
 CUSTOM_DOMAIN="2048-3d.franzai.com"
 
-# Get version from package.json
-VERSION=$(node -p "require('./package.json').version")
-echo "📦 Deploying version $VERSION"
+# Auto-increment version
+CURRENT_VERSION=$(node -p "require('./package.json').version")
+IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+PATCH=$((VERSION_PARTS[2] + 1))
+NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
+
+# Update package.json with new version
+npm version $NEW_VERSION --no-git-tag-version
+
+# Get deployment date
+DEPLOY_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "📦 Deploying version $NEW_VERSION (was $CURRENT_VERSION)"
+echo "📅 Deployment date: $DEPLOY_DATE"
 
 echo "🚀 Starting deployment of $PROJECT_NAME"
 

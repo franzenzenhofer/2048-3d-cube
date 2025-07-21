@@ -21,7 +21,7 @@ export class MinimalUI {
         <p class="start-subtitle">A 3D PUZZLE</p>
         <div class="start-hint">TAP TO BEGIN</div>
       </div>
-      <div class="version-start">v${__APP_VERSION__}</div>
+      <div class="version-start">v${__APP_VERSION__}<br><span class="deploy-date">${new Date(__BUILD_TIME__).toLocaleDateString()}</span></div>
     `;
     this.container.appendChild(this.startScreen);
 

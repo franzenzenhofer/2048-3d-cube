@@ -303,11 +303,11 @@ export class CubeGameV3Fixed {
         break;
       case SwipeDirection.UP:
         axis = 'x';
-        angle = 90;   // Rotate cube up to show top face
+        angle = -90;  // Rotate cube up to show top face
         break;
       case SwipeDirection.DOWN:
         axis = 'x';
-        angle = -90;  // Rotate cube down to show bottom face
+        angle = 90;   // Rotate cube down to show bottom face
         break;
     }
     
